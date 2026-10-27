@@ -1,0 +1,339 @@
+@import "tailwindcss";
+@import "lenis/dist/lenis.css";
+
+/* ---------------------------------------------------------------- tokens */
+
+@theme inline {
+  --color-bg: #08080c;
+  --color-surface: #111118;
+  --color-surface-2: #15151d;
+  --color-elevated: #1c1c26;
+  --color-line: rgb(255 255 255 / 0.08);
+  --color-line-strong: rgb(255 255 255 / 0.16);
+  --color-ink: #f2f1ee;
+  --color-ink-2: #c3c2b7;
+  --color-muted: #8b8a93;
+  --color-accent: #9085e9;
+  --color-accent-soft: #b9b1ff;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-unbounded), var(--font-geist-sans), sans-serif;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
+}
+
+:root {
+  color-scheme: dark;
+  --gutter: clamp(16px, 4vw, 56px);
+  --nav-height: 64px;
+  /* Decorative only (never data): the hero/brand gradient. */
+  --holo: linear-gradient(100deg, #9085e9 0%, #e87ba4 45%, #f6b26b 90%);
+}
+
+html {
+  background: var(--color-bg);
+  scrollbar-color: #2a2a36 transparent;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+
+::selection {
+  background: rgb(144 133 233 / 0.45);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent-soft);
+  outline-offset: 3px;
+}
+
+/* ------------------------------------------------------------ atmosphere */
+
+.grain {
+  pointer-events: none;
+  position: fixed;
+  inset: -10%;
+  z-index: 90;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 1.2s steps(6) infinite;
+}
+
+@keyframes grain {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-4%, 3%); }
+  40% { transform: translate(3%, -5%); }
+  60% { transform: translate(-2%, 6%); }
+  80% { transform: translate(5%, 1%); }
+  100% { transform: translate(0, 0); }
+}
+
+.aurora {
+  pointer-events: none;
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+}
+
+.glass {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.02)),
+    rgb(13 13 19 / 0.82);
+  border: 1px solid var(--color-line);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  /* Unprefixed only: the build adds -webkit- (writing both made it drop this one). */
+  backdrop-filter: blur(18px) saturate(1.4);
+}
+
+.holo-text {
+  background: var(--holo);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: holo 8s ease-in-out infinite alternate;
+}
+
+@keyframes holo {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+
+.outline-text {
+  color: transparent;
+  -webkit-text-stroke: 1px rgb(242 241 238 / 0.35);
+}
+
+/* ---------------------------------------------------------------- intro */
+
+.intro {
+  animation: intro-fallback 0.6s 4s forwards;
+}
+
+@keyframes intro-fallback {
+  to { opacity: 0; visibility: hidden; }
+}
+
+/* ------------------------------------------------------------- the wall */
+
+.wall-stage {
+  perspective: 1400px;
+  perspective-origin: 50% 40%;
+}
+
+.wall-row {
+  will-change: transform;
+}
+
+/* --------------------------------------------------------------- covers */
+
+.cover-frame {
+  container-type: inline-size;
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  background: #0d0d14;
+}
+
+.cover-frame img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-out-expo);
+}
+
+.cover-frame img[data-loaded] {
+  opacity: 1;
+}
+
+.cover-frame img[data-failed] {
+  display: none;
+}
+
+/* Generated poster art: each cover only sets hues and positions as variables. */
+.gen-art {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 7cqi;
+  background:
+    radial-gradient(circle at var(--ax) var(--ay), hsl(var(--h1) 88% 60% / 0.95), transparent 52%),
+    radial-gradient(circle at var(--bx) var(--by), hsl(var(--h2) 82% 52% / 0.8), transparent 58%),
+    linear-gradient(160deg, hsl(var(--h3) 45% 18%), #0b0b12 72%);
+}
+
+.gen-art::before,
+.gen-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+.gen-motif-0::before {
+  opacity: 0.45;
+  background: repeating-radial-gradient(circle at var(--ax) var(--ay), transparent 0 12cqi, #fff 12cqi calc(12cqi + 2px));
+}
+
+.gen-motif-1::before {
+  opacity: 0.32;
+  background: repeating-linear-gradient(var(--angle), #fff 0 5px, transparent 5px 14px);
+}
+
+.gen-motif-2::before {
+  opacity: 0.5;
+  background: radial-gradient(#fff 1.4px, transparent 1.8px) 0 0 / 16px 16px;
+}
+
+.gen-motif-3::before {
+  opacity: 0.55;
+  background: radial-gradient(circle at 50% calc(30% + var(--ay) / 3), #fff 0 30%, transparent calc(30% + 1px));
+}
+
+.gen-motif-3::after {
+  inset: 48% 0 0;
+  mix-blend-mode: normal;
+  opacity: 0.55;
+  background: repeating-linear-gradient(180deg, transparent 0 8px, #0b0b12 8px 11px);
+}
+
+.gen-tag {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-mono);
+  font-size: max(9px, 5.2cqi);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.75);
+}
+
+.gen-title {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+  font-size: calc(var(--title-scale, 1) * 13cqi);
+  text-shadow: 0 2px 24px rgb(0 0 0 / 0.35);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------- cards */
+
+.tilt {
+  transform-style: preserve-3d;
+}
+
+.card-surface {
+  position: relative;
+  border-radius: 18px;
+  box-shadow: 0 18px 40px -18px rgb(0 0 0 / 0.9);
+  transition: box-shadow 0.5s ease;
+}
+
+.card:hover .card-surface,
+.card:focus-visible .card-surface {
+  box-shadow: 0 30px 60px -20px rgb(144 133 233 / 0.45);
+}
+
+.card-ring {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+}
+
+.glare {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(
+    circle at var(--glare-x, 50%) var(--glare-y, 0%),
+    rgb(255 255 255 / 0.35),
+    rgb(255 255 255 / 0) 55%
+  );
+  mix-blend-mode: overlay;
+  transition: opacity 0.4s ease;
+}
+
+.card:hover .glare,
+.card:focus-visible .glare {
+  opacity: 1;
+}
+
+.reveal {
+  opacity: 0;
+  translate: 0 48px;
+  transition:
+    opacity 0.9s var(--ease-out-expo),
+    translate 0.9s var(--ease-out-expo);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+[data-revealed] > .reveal {
+  opacity: 1;
+  translate: 0 0;
+}
+
+/* ---------------------------------------------------------------- misc */
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.marquee-track {
+  animation: marquee 28s linear infinite;
+}
+
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro,
+  .grain,
+  .cursor {
+    display: none !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    translate: none;
+    transition: none;
+  }
+
+  .holo-text,
+  .marquee-track {
+    animation: none;
+  }
+}
