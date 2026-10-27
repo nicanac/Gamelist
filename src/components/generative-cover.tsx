@@ -22,12 +22,31 @@ function seeded(seed: number) {
   };
 }
 
-function titleScale(name: string): number {
-  if (name.length > 48) return 0.58;
-  if (name.length > 32) return 0.7;
-  if (name.length > 18) return 0.84;
-  if (name.length > 9) return 1;
-  return 1.2;
+/** Advance widths of Unbounded ExtraBold capitals and digits, in em, measured in Chrome. */
+const GLYPH_EM: Record<string, number> = {
+  A: 0.98, B: 0.9, C: 0.94, D: 0.94, E: 0.8, F: 0.78, G: 0.97, H: 0.95, I: 0.36, J: 0.82, K: 0.88, L: 0.77,
+  M: 1.26, N: 0.98, O: 0.97, P: 0.83, Q: 0.97, R: 0.86, S: 0.86, T: 0.83, U: 0.88, V: 0.95, W: 1.38, X: 0.9,
+  Y: 0.94, Z: 0.82, "0": 0.94, "1": 0.54, "2": 0.85, "3": 0.85, "4": 0.88, "5": 0.82, "6": 0.87, "7": 0.77,
+  "8": 0.91, "9": 0.87,
+};
+
+/** Width of one unbreakable run of the title, in em, after the title's -0.02em tracking. */
+function wordEm(word: string): number {
+  let em = 0;
+  for (const char of word.toUpperCase().normalize("NFD").replace(/\p{M}/gu, "")) {
+    em += (GLYPH_EM[char] ?? (/\p{L}/u.test(char) ? 0.9 : 0.4)) - 0.02;
+  }
+  return em;
+}
+
+/**
+ * Title size as a multiple of 13cqi: smaller for longer names, and never so large that the
+ * longest word overflows the 86cqi between the poster's 7cqi paddings and has to break.
+ */
+export function titleScale(name: string): number {
+  const byLength = name.length > 48 ? 0.58 : name.length > 32 ? 0.7 : name.length > 18 ? 0.84 : name.length > 9 ? 1 : 1.2;
+  const longest = Math.max(...name.split(/\s+|(?<=-)/).map(wordEm));
+  return Math.min(byLength, Math.floor((86 / 13 / longest) * 0.97 * 100) / 100);
 }
 
 /**

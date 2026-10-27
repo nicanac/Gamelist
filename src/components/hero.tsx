@@ -46,6 +46,8 @@ export function Hero({ stats, wallGames, source, syncedAt, ready, onExplore }: H
             .to("[data-hero-fade]", { autoAlpha: 1, y: 0, duration: 1.1, stagger: 0.1 }, 0.35);
           gsap.utils.toArray<HTMLElement>("[data-count]", scope).forEach((element, index) => {
             const value = { n: 0 };
+            // Staggered counts start late: show 0 until then, not the final number.
+            element.textContent = "0";
             timeline.to(
               value,
               {
