@@ -92,4 +92,5 @@ src/components/          hero + cover wall, now playing, stats + charts, collect
 src/lib/                 Notion client + normalizer, library loader, covers, stats, filters, GSAP setup
 src/data/library.json    snapshot used when Notion is not configured
 scripts/sync-notion.ts   snapshot + cover baking
+presentation/            a 36-second film of the app, made with HyperFrames (see its README)
 ```

@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# HyperFrames: local project history, snapshots and renders
+/presentation/.hyperframes/
+/presentation/renders/

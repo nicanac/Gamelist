@@ -1,0 +1,50 @@
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: var(--color-night, #08080c);
+    }
+
+    #app-cam {
+      position: absolute;
+      inset: 0;
+    }
+
+    #app-video {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      object-fit: cover;
+    }
+  </style>
+
+  <!-- Footage: the app's count-up curtain from the frame where it reads 237, then the hero. -->
+  <div id="root" data-composition-id="app" data-width="1920" data-height="1080">
+    <div id="app-cam">
+      <video
+        id="app-video"
+        class="clip"
+        data-start="0"
+        data-duration="4.75"
+        data-media-start="1.0334"
+        data-track-index="0"
+        src="assets/footage/intro.mp4"
+        muted
+        playsinline
+      ></video>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+      // The page scrolls on: the hero leaves upward as the collection arrives from below.
+      tl.fromTo("#app-cam", { y: 0 }, { y: -1080, duration: 0.36, ease: "power4.inOut" }, 4.35);
+      window.__timelines["app"] = tl;
+    })();
+  </script>
+</template>

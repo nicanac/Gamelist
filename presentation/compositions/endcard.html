@@ -1,0 +1,117 @@
+<template>
+  <style>
+      @font-face { font-family: "Geist Mono"; src: url("assets/fonts/geist-mono-latin-ext.woff2") format("woff2"); font-weight: 100 900; font-display: block; unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+      @font-face { font-family: "Geist Mono"; src: url("assets/fonts/geist-mono-latin.woff2") format("woff2"); font-weight: 100 900; font-display: block; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+      @font-face { font-family: "Unbounded"; src: url("assets/fonts/unbounded-latin-ext.woff2") format("woff2"); font-weight: 200 900; font-display: block; unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+      @font-face { font-family: "Unbounded"; src: url("assets/fonts/unbounded-latin.woff2") format("woff2"); font-weight: 200 900; font-display: block; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+    /* Transparent: the claim's last words leave on the same night as the mark arrives. */
+    #root {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    /* The app's own aurora, as radial fills (a blur filter bands under H.264). */
+    #end-aurora {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(42% 52% at 24% 30%, rgb(107 84 255 / 0.34), transparent 70%),
+        radial-gradient(40% 50% at 78% 74%, rgb(232 87 154 / 0.28), transparent 70%);
+      opacity: 0;
+    }
+
+    /* The nav's lockup at 3.7x: a 26 px mark, a 10 px gap, Unbounded Bold caps at 12 px. */
+    #end-lockup {
+      position: absolute;
+      left: 686px;
+      top: 452px;
+      display: flex;
+      align-items: center;
+      gap: 37px;
+    }
+
+    #end-mark {
+      position: relative;
+      width: 96px;
+      height: 96px;
+    }
+
+    #end-mark svg {
+      position: absolute;
+      inset: 0;
+      width: 96px;
+      height: 96px;
+    }
+
+    #end-word {
+      margin: 0;
+      font-family: "Unbounded", sans-serif;
+      font-weight: 700;
+      font-size: 44.3px;
+      line-height: 1;
+      letter-spacing: -0.025em;
+      text-transform: uppercase;
+      color: #f2f1ee;
+      white-space: nowrap;
+      clip-path: inset(0% 100% 0% 0%);
+    }
+
+    #end-cta {
+      position: absolute;
+      left: 0;
+      top: 612px;
+      width: 1920px;
+      margin: 0;
+      font-family: "Geist Mono", monospace;
+      font-size: 34px;
+      line-height: 1.2;
+      text-align: center;
+      color: #c3c2b7;
+    }
+  </style>
+
+  <div id="root" data-composition-id="endcard" data-width="1920" data-height="1080">
+    <div id="end-aurora"></div>
+    <div id="end-lockup">
+      <!-- assets/brand/logo-mark.svg, split so the fill and the triangle can land separately. -->
+      <div id="end-mark">
+        <svg id="end-fill" viewBox="0 0 32 32" aria-hidden="true">
+          <defs>
+            <linearGradient id="end-holo" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#9085e9" />
+              <stop offset="0.55" stop-color="#e87ba4" />
+              <stop offset="1" stop-color="#f6b26b" />
+            </linearGradient>
+          </defs>
+          <rect width="32" height="32" rx="9" fill="url(#end-holo)" />
+        </svg>
+        <svg id="end-play" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M12 9.5v13l11-6.5-11-6.5Z" fill="#08080c" />
+        </svg>
+      </div>
+      <p id="end-word">Game Library</p>
+    </div>
+    <p id="end-cta" data-var-text="cta">github.com/nicanac/Gamelist</p>
+  </div>
+
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+      // The lockup is 547 px wide; the mark starts alone in the middle and makes room for the word.
+      tl.fromTo("#end-aurora", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "power2.inOut" }, 0.05);
+      tl.fromTo("#end-lockup", { x: 225.5 }, { x: 0, duration: 0.6, ease: "power3.inOut" }, 0.8);
+      tl.fromTo("#end-fill", { clipPath: "inset(100% 0% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.5, ease: "expo.inOut" }, 0.05);
+      tl.fromTo(
+        "#end-play",
+        { opacity: 0, scale: 0.4, transformOrigin: "52% 50%" },
+        { opacity: 1, scale: 1, duration: 0.45, ease: "expo.out" },
+        0.45,
+      );
+      tl.fromTo("#end-word", { clipPath: "inset(0% 100% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.6, ease: "expo.out" }, 1);
+      tl.fromTo("#end-cta", { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power2.out" }, 1.45);
+      window.__timelines["endcard"] = tl;
+    })();
+  </script>
+</template>

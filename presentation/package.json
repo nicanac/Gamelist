@@ -1,0 +1,13 @@
+{
+  "name": "gamelist-presentation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@0.8.209 preview",
+    "check": "npx --yes hyperframes@0.8.209 check",
+    "render": "npx --yes hyperframes@0.8.209 render --quality delivery --output renders/game-library.mp4",
+    "capture": "node scripts/capture-footage.mjs",
+    "build-scenes": "node scripts/build-scenes.mjs",
+    "publish": "npx --yes hyperframes@0.8.209 publish"
+  }
+}

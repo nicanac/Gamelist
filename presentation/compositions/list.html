@@ -1,0 +1,482 @@
+<template>
+  <style>
+      @font-face { font-family: "Geist"; src: url("assets/fonts/geist-latin-ext.woff2") format("woff2"); font-weight: 100 900; font-display: block; unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+      @font-face { font-family: "Geist"; src: url("assets/fonts/geist-latin.woff2") format("woff2"); font-weight: 100 900; font-display: block; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+      @font-face { font-family: "Geist Mono"; src: url("assets/fonts/geist-mono-latin-ext.woff2") format("woff2"); font-weight: 100 900; font-display: block; unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+      @font-face { font-family: "Geist Mono"; src: url("assets/fonts/geist-mono-latin.woff2") format("woff2"); font-weight: 100 900; font-display: block; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+      @font-face { font-family: "Unbounded"; src: url("assets/fonts/unbounded-latin-ext.woff2") format("woff2"); font-weight: 200 900; font-display: block; unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+      @font-face { font-family: "Unbounded"; src: url("assets/fonts/unbounded-latin.woff2") format("woff2"); font-weight: 200 900; font-display: block; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: var(--color-paper, #f2f1ee);
+      color: #08080c;
+    }
+
+    .list-title {
+      position: absolute;
+      left: 96px;
+      top: 112px;
+      margin: 0;
+      font-family: "Unbounded", sans-serif;
+      font-weight: 900;
+      font-size: 92px;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .list-title .w {
+      display: inline-block;
+    }
+
+    #list-table {
+      position: absolute;
+      left: 96px;
+      top: 296px;
+      width: 1728px;
+      height: 784px;
+    }
+
+    .list-head,
+    .list-row {
+      display: grid;
+      grid-template-columns: 658px 420px 240px 150px 260px;
+      align-items: center;
+      font-family: "Geist Mono", monospace;
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .list-head {
+      height: 64px;
+      border-bottom: 2px solid #08080c;
+      color: #5e5d66;
+      font-weight: 500;
+    }
+
+    /* The render's motion blur skips the clipped table body, so the rush gets its own vertical blur. */
+    .list-viewport {
+      position: absolute;
+      inset: 64px 0 0 0;
+      overflow: hidden;
+      filter: url(#list-vblur);
+    }
+
+    #list-body {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+    }
+
+    .list-row {
+      height: 68px;
+      border-bottom: 1px solid rgb(8 8 12 / 0.12);
+    }
+
+    .list-cell {
+      overflow: hidden;
+      padding-right: 32px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .list-num {
+      padding-right: 0;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* The app's count-up curtain at 237, matched to the captured frame (1440 x 810 viewport x 4/3). */
+    .list-count {
+      position: absolute;
+      left: 0;
+      top: 372px;
+      width: 1920px;
+      margin: 0;
+      font-family: "Unbounded", sans-serif;
+      font-weight: 900;
+      font-size: 293.333px;
+      line-height: 1;
+      letter-spacing: -7.333px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #list-count-paper {
+      color: #08080c;
+    }
+
+    #list-night {
+      position: absolute;
+      inset: 0;
+      background: var(--color-night, #08080c);
+      clip-path: inset(100% 0% 0% 0%);
+    }
+
+    #list-count-night {
+      color: #f2f1ee;
+    }
+
+    #list-caption {
+      position: absolute;
+      left: 0;
+      top: 686.667px;
+      width: 1920px;
+      margin: 0;
+      font-family: "Geist Mono", monospace;
+      font-size: 16px;
+      line-height: 21.333px;
+      letter-spacing: 5.6px;
+      text-align: center;
+      text-transform: uppercase;
+      color: #8b8a93;
+    }
+
+    #list-track {
+      position: absolute;
+      left: 746.667px;
+      top: 949.083px;
+      width: 426.667px;
+      height: 1.333px;
+      background: #f2f1ee;
+    }
+  </style>
+
+  <div id="root" data-composition-id="list" data-width="1920" data-height="1080">
+    <h1 id="list-title-1" class="list-title" data-layout-allow-overlap>
+      <span class="w">237</span> <span class="w">games</span> <span class="w">in</span> <span class="w">Notion</span>
+    </h1>
+    <h1 id="list-title-2" class="list-title" data-layout-allow-overlap>
+      <span class="w">One</span> <span class="w">very</span> <span class="w">long</span> <span class="w">list</span>
+    </h1>
+
+    <svg width="0" height="0" aria-hidden="true" style="position: absolute">
+      <filter id="list-vblur" x="0" y="-10%" width="100%" height="120%" color-interpolation-filters="sRGB">
+        <feGaussianBlur id="list-vblur-amount" stdDeviation="0 0" />
+      </filter>
+    </svg>
+
+    <div id="list-table" data-layout-allow-overflow>
+      <div class="list-head">
+        <span class="list-cell">name</span>
+        <span class="list-cell">platforms</span>
+        <span class="list-cell">status</span>
+        <span class="list-cell list-num">mc_score</span>
+        <span class="list-cell list-num">hltb_main_story</span>
+      </div>
+      <div class="list-viewport">
+        <div id="list-body" data-layout-ignore>
+          <!-- rows:start -->
+          <div class="list-row"><span class="list-cell list-name">A Link Between Worlds</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">91</span><span class="list-cell list-num">14,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">A Link to the Past</span><span class="list-cell list-platform">Super Nintendo Entertainment System (SNES)</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">95</span><span class="list-cell list-num">14,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Abzû</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">79</span><span class="list-cell list-num">2,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Airwolf</span><span class="list-cell list-platform">Nintendo Entertainment System (NES)</span><span class="list-cell list-status">Done</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Andro Dunos II</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num"></span><span class="list-cell list-num">1,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">ARMS</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">77</span><span class="list-cell list-num">2,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Assassin's Creed Origins</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">84</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Assassin's Creed Syndicate</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">76</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Back 4 Blood: Deluxe Edition</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">77</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Battlefield 1</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">89</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Bloodborne</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">92</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Boulder Dash</span><span class="list-cell list-platform">Nintendo Entertainment System (NES)</span><span class="list-cell list-status">Done</span><span class="list-cell list-num"></span><span class="list-cell list-num">3,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Breath of the Wild</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">97</span><span class="list-cell list-num">50,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Cadence of Hyrule: Crypt of the NecroDancer Featuring The Legend of Zelda - Symphony of the Mask</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">The Callisto Protocol</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">68</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Captain Tsubasa: Rise of New Champions - Collector's Edition</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">69</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Child of Light: Ultimate Edition + Valiant Hearts: The Great War</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Clubhouse Games: 51 Worldwide Classics</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">82</span><span class="list-cell list-num">8,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Collection of Mana</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">83</span><span class="list-cell list-num">69,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">The Crew 2</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">68</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Dark Souls</span><span class="list-cell list-platform">Xbox 360</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">89</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Dark Souls III: Game of the Year Edition</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">89</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Dark Souls Remastered</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">79</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Days Gone</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">71</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Dead Cells</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">88</span><span class="list-cell list-num">14,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Death's Door</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">88</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Death's Gambit: Afterlife - Definitive Edition</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">79</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Demon's Souls</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">92</span><span class="list-cell list-num">24,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Destiny 2</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">83</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Detroit: Become Human</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">78</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Devil May Cry 5 Special Edition</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">89</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Diablo III: Reaper of Souls</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">88</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Diablo IV</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">86</span><span class="list-cell list-num">35,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Dishonored 2</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">79</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Divinity: Original Sin 2 Definitive Edition</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">93</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Donkey Kong Classics</span><span class="list-cell list-platform">Nintendo Entertainment System (NES)</span><span class="list-cell list-status">Done</span><span class="list-cell list-num"></span><span class="list-cell list-num">1,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Donkey Kong Country Returns 3D</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">83</span><span class="list-cell list-num">11,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Donkey Kong Country: Tropical Freeze</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">86</span><span class="list-cell list-num">11,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Donkey Kong Land</span><span class="list-cell list-platform">Game Boy</span><span class="list-cell list-status">Done</span><span class="list-cell list-num"></span><span class="list-cell list-num">2,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Doom</span><span class="list-cell list-platform">PC (Microsoft Windows)</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">88</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Doom</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">87</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">DOOM 64</span><span class="list-cell list-platform">Nintendo 64</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num"></span><span class="list-cell list-num">7,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">DOOM 64</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">76</span><span class="list-cell list-num">7,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">DOOM 64</span><span class="list-cell list-platform">PC (Microsoft Windows)</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">76</span><span class="list-cell list-num">7,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Dragon Ball FighterZ</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">87</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Dragon Ball Z: Kakarot</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">73</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Dragon Ball: Sparking! Zero</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">76</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Dragon Quest XI: Les Combattants de la destinée</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">91</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Dragon's Crown Pro</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">83</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Driveclub</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">71</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">DuckTales</span><span class="list-cell list-platform">Nintendo Entertainment System (NES)</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">78</span><span class="list-cell list-num">1,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Dying Light 2 Stay Human</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">73</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Echoes of Wisdom</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">87</span><span class="list-cell list-num">14,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Elden Ring: Collector's Edition</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">96</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Elden Ring: Collector's Edition</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">96</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">The Elder Scrolls V: Skyrim Switch</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">81</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">The Evil Within 2</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">76</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Fallout 76</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">52</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Farpoint</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">66</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">FIFA 18</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">80</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">FIFA 22</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">78</span><span class="list-cell list-num">46,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Final Fantasy VII Remake Intergrade</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">89</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Final Fantasy XV</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">81</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Final Fantasy: Mystic Quest</span><span class="list-cell list-platform">Game Boy</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Four Swords Adventures</span><span class="list-cell list-platform">Nintendo GameCube</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">76</span><span class="list-cell list-num">11,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Game &amp; Watch: Super Mario Bros.</span><span class="list-cell list-platform">Hardware</span><span class="list-cell list-status">Done</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Game &amp; Watch: Super Mario Bros. (Color Screen)</span><span class="list-cell list-platform">Hardware</span><span class="list-cell list-status">Done</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Game &amp; Watch: The Legend of Zelda</span><span class="list-cell list-platform">Hardware</span><span class="list-cell list-status">Done</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">God of War</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">94</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Gran Turismo 7</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">87</span><span class="list-cell list-num">24,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Gran Turismo Sport</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">75</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Grand Theft Auto V</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">97</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Hades</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">93</span><span class="list-cell list-num">22,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">The Heavy Rain &amp; BEYOND: Two Souls Collection</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Horizon Zero Dawn</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">89</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Just Dance 2016</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">73</span><span class="list-cell list-num">3,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Just Dance 2017</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">72</span><span class="list-cell list-num">6,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Kingdom Hearts III</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">83</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Kirby Star Allies</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">73</span><span class="list-cell list-num">5,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">The Last Guardian</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">82</span><span class="list-cell list-num">12,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">The last of us Part 1;</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">89</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">The Last of Us Remastered</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">95</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">The Legend of Zelda</span><span class="list-cell list-platform">Nintendo Entertainment System (NES)</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">95</span><span class="list-cell list-num">8,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">The Legend of Zelda</span><span class="list-cell list-platform">Wii</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">95</span><span class="list-cell list-num">8,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">The Legend of Zelda</span><span class="list-cell list-platform">Nintendo Entertainment System (NES)</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">85</span><span class="list-cell list-num">5,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">The Legend of Zelda: A Link Between Worlds</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">91</span><span class="list-cell list-num">16,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">The Legend of Zelda: Breath of the Wild</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">97</span><span class="list-cell list-num">50,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">The Legend of Zelda: Link's Awakening - Limited Edition</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">87</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">The Legend of Zelda: Majora's Mask 3D</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">89</span><span class="list-cell list-num">25,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">The Legend of Zelda: Majora's Mask 3D - Special Edition</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">89</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">The Legend of Zelda: Ocarina of Time 3D</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">94</span><span class="list-cell list-num">25,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">The Legend of Zelda: The Wind Waker HD</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">90</span><span class="list-cell list-num">25,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">The Legend of Zelda: Twilight Princess</span><span class="list-cell list-platform">Wii</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">96</span><span class="list-cell list-num">37,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">The Legend of Zelda: Twilight Princess HD</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">86</span><span class="list-cell list-num">30,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">LEGO Harry Potter Collection</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">73</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">LEGO Ninjago</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">66</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Link's Awakening</span><span class="list-cell list-platform">Game Boy</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">90</span><span class="list-cell list-num">8,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Link's Awakening (remake)</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">87</span><span class="list-cell list-num">10,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Luigi's Mansion 3</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">86</span><span class="list-cell list-num">13,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Majora's Mask</span><span class="list-cell list-platform">Nintendo 64</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">95</span><span class="list-cell list-num">20,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Majora's Mask 3D</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">90</span><span class="list-cell list-num">20,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Man of Medan</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">69</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Mario &amp; Sonic at the Rio 2016 Olympic Games</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">65</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Mario + Rabbids Kingdom Battle</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">85</span><span class="list-cell list-num">21,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Mario Kart 7</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">88</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Mario Kart 8</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">92</span><span class="list-cell list-num">5,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Mario Kart 8 Deluxe</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">92</span><span class="list-cell list-num">6,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Mario Kart Wii</span><span class="list-cell list-platform">Wii</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">82</span><span class="list-cell list-num">5,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Mario Kart World</span><span class="list-cell list-platform">Nintendo Switch 2</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">94</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Mario Party: The Top 100</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">59</span><span class="list-cell list-num">4,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Mario Strikers: Battle League</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">73</span><span class="list-cell list-num">4,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Mario Tennis Aces</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">75</span><span class="list-cell list-num">6,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Mario Tennis Fever</span><span class="list-cell list-platform">Nintendo Switch 2</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">77</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Marvel's Spider-Man: Miles Morales</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">85</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Mass Effect: Andromeda</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">72</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Max: The Curse of Brotherhood</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">73</span><span class="list-cell list-num">6,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Medal of Honor: Heroes 2</span><span class="list-cell list-platform">Wii</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">73</span><span class="list-cell list-num">5,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Metroid Dread: Special Edition</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">88</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Monopoly</span><span class="list-cell list-platform">PC (Microsoft Windows)</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Monster Boy and the Cursed Kingdom</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">87</span><span class="list-cell list-num">18,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Monster Hunter: World</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">90</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Mortal Kombat 11</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">82</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Mortal Kombat 11 Ultimate</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">83</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Moss</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">80</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">MotorStorm</span><span class="list-cell list-platform">PlayStation 3</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">82</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">MotorStorm Pacific Rift</span><span class="list-cell list-platform">PlayStation 3</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">87</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">NBA 2K21</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Stalled</span><span class="list-cell list-num">68</span><span class="list-cell list-num">22,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">NBA 2K21</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">79</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">New Super Mario Bros. U + New Super Luigi U</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">84</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">New Super Mario Bros. U Deluxe</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">80</span><span class="list-cell list-num">9,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">New Super Mario Bros. Wii</span><span class="list-cell list-platform">Wii</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">87</span><span class="list-cell list-num">9,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">New Super Mario Bros. Wii</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">87</span><span class="list-cell list-num">9,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Ni no Kuni II: Revenant Kingdom</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">82</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Nintendo Land</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">77</span><span class="list-cell list-num">10,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Nioh</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">88</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Ocarina of Time</span><span class="list-cell list-platform">Nintendo 64</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">99</span><span class="list-cell list-num">26,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Ocarina of Time 3D</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">94</span><span class="list-cell list-num">26,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Oddworld: Soulstorm - Day 1 Oddition</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">71</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Okami HD</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">89</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Oracle of Ages</span><span class="list-cell list-platform">Game Boy Color</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">91</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Oracle of Seasons</span><span class="list-cell list-platform">Game Boy Color</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">91</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Ori and the Will of the Wisps</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">93</span><span class="list-cell list-num">11,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Overcooked! + Overcooked! 2</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Paperboy</span><span class="list-cell list-platform">Nintendo Entertainment System (NES)</span><span class="list-cell list-status">Done</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Path of Exile 2</span><span class="list-cell list-platform">PC (Microsoft Windows)</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">81</span><span class="list-cell list-num">35,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Phantom Hourglass</span><span class="list-cell list-platform">Nintendo DS</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">90</span><span class="list-cell list-num">18,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">PlayStation VR Worlds</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">71</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Pro Evolution Soccer 2018</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">82</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Professor Layton and the Azran Legacy</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">81</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Professor Layton and the Curious Village</span><span class="list-cell list-platform">Nintendo DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">85</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Professor Layton and the Diabolical Box</span><span class="list-cell list-platform">Nintendo DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">84</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Professor Layton and the Last Specter</span><span class="list-cell list-platform">Nintendo DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">83</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Professor Layton and the Miracle Mask</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">82</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Professor Layton and the Miracle Mask Plus</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">85</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Professor Layton and the New World of Steam</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Professor Layton and the Unwound Future</span><span class="list-cell list-platform">Nintendo DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">85</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Puyo Puyo Tetris</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">81</span><span class="list-cell list-num">8,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Rabbids Go Home</span><span class="list-cell list-platform">Wii</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">78</span><span class="list-cell list-num">11,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Rage 2</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">67</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Ratchet &amp; Clank: Rift Apart</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">88</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Rayman Legends: Definitive Edition</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">84</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Resident Evil</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">83</span><span class="list-cell list-num">6,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Resident Evil 3</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">73</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Resident Evil 4</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">93</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Resident Evil 6</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">67</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Resident Evil 7: Biohazard</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">87</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Resident Evil 7: Biohazard</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">83</span><span class="list-cell list-num">9,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Resident Evil 9</span><span class="list-cell list-platform">Xbox Series X|S</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">89</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Resident Evil Origins Collection</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Resident Evil Village (8)</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">84</span><span class="list-cell list-num">9,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Resident Evil Village: Collector's Edition</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">84</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Rise of the Tomb Raider: 20 Year Celebration</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">88</span><span class="list-cell list-num">15,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Sega Mega Drive &amp; Genesis Classics</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">76</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Shantae: Half-Genie Hero - Ultimate Day One Edition</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">82</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">The Simpsons Cartoon Studio</span><span class="list-cell list-platform">PC (Microsoft Windows)</span><span class="list-cell list-status">Done</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Skyward Sword</span><span class="list-cell list-platform">Wii</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">93</span><span class="list-cell list-num">37,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Skyward Sword HD</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">81</span><span class="list-cell list-num">37,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Sonic Mania Plus</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">93</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Sonic Superstars</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">73</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Spirit Tracks</span><span class="list-cell list-platform">Nintendo DS</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">87</span><span class="list-cell list-num">16,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Splatoon</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">81</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Splatoon 2</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">83</span><span class="list-cell list-num">7,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Star Wars</span><span class="list-cell list-platform">Nintendo Entertainment System (NES)</span><span class="list-cell list-status">Done</span><span class="list-cell list-num"></span><span class="list-cell list-num">1,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Star Wars Battlefront</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">73</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Star Wars Battlefront II</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">68</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Star Wars Jedi: Fallen Order</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">79</span><span class="list-cell list-num">17,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Steep: Road to the Olympics</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">70</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Strange Brigade</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">77</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Streets of Rage 4: Signature Edition</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">82</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Bomberman R Online</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">61</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Mario 3D All-Stars</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">82</span><span class="list-cell list-num">35,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Mario 3D World</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">93</span><span class="list-cell list-num">10,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Mario 3D World + Bowser's Fury</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">89</span><span class="list-cell list-num">10,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Mario 3D World + Bowser's Fury</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Stalled</span><span class="list-cell list-num">89</span><span class="list-cell list-num">10,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Mario 64 DS</span><span class="list-cell list-platform">Nintendo DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">85</span><span class="list-cell list-num">14,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Mario Bros. 2</span><span class="list-cell list-platform">Nintendo Entertainment System (NES)</span><span class="list-cell list-status">Done</span><span class="list-cell list-num"></span><span class="list-cell list-num">3,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Mario Bros. Wonder</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">92</span><span class="list-cell list-num">10,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Mario Galaxy</span><span class="list-cell list-platform">Wii</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">97</span><span class="list-cell list-num">14,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Mario Galaxy 2</span><span class="list-cell list-platform">Wii</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">97</span><span class="list-cell list-num">13,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Mario Maker</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Stalled</span><span class="list-cell list-num">88</span><span class="list-cell list-num">5,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Mario Maker 2</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">88</span><span class="list-cell list-num">7,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Mario Odyssey</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">97</span><span class="list-cell list-num">12,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Mario Party</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">76</span><span class="list-cell list-num">6,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Smash Bros. Brawl</span><span class="list-cell list-platform">Wii</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">93</span><span class="list-cell list-num">11,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Super Smash Bros. for Wii U</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">92</span><span class="list-cell list-num">4,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Sushi Striker: The Way of Sushido</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Stalled</span><span class="list-cell list-num">76</span><span class="list-cell list-num">15,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Team Sonic Racing</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">74</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Tears of the Kingdom</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">96</span><span class="list-cell list-num">55,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Teenage Mutant Ninja Turtles: Shredder's Revenge</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">85</span><span class="list-cell list-num">2,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Teenage Mutant Ninja Turtles: The Cowabunga Collection</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">83</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Terminator Resistance</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">55</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Terminator Resistance Enhanced</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Dropped</span><span class="list-cell list-num">62</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Test Drive Off-Road</span><span class="list-cell list-platform">PC (Microsoft Windows)</span><span class="list-cell list-status">Done</span><span class="list-cell list-num"></span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Tetris</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">85</span><span class="list-cell list-num">4,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Tetris 99</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">83</span><span class="list-cell list-num">5,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Tom Clancy's Rainbow Six Siege</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">79</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Tomb Raider II</span><span class="list-cell list-platform">PC (Microsoft Windows)</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">85</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Trackmania Turbo</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">80</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Tri Force Heroes</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">75</span><span class="list-cell list-num">7,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Twilight Princess</span><span class="list-cell list-platform">Nintendo GameCube</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">96</span><span class="list-cell list-num">35,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Twilight Princess HD</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">86</span><span class="list-cell list-num">35,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Ultimate NES Remix</span><span class="list-cell list-platform">Nintendo 3DS</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">69</span><span class="list-cell list-num">7,50</span></div>
+          <div class="list-row"><span class="list-cell list-name">Uncharted 4: A Thief's End</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">93</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Uncharted: The Lost Legacy</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">84</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Unravel (Yarny Bundle)</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">77</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Until Dawn</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">79</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Urban Trial Playground</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">66</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Victor Vran: Overkill Edition</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">In progress</span><span class="list-cell list-num">76</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Wii Party U</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">77</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">The Wind Waker</span><span class="list-cell list-platform">Nintendo GameCube</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">96</span><span class="list-cell list-num">28,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">WipEout Omega Collection</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">85</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Wo Long: Fallen Dynasty</span><span class="list-cell list-platform">PlayStation 5</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">81</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Wolfenstein II: The New Colossus</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Not started</span><span class="list-cell list-num">87</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Wreckfest</span><span class="list-cell list-platform">PlayStation 4</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">74</span><span class="list-cell list-num"></span></div>
+          <div class="list-row"><span class="list-cell list-name">Yoshi's Crafted World</span><span class="list-cell list-platform">Nintendo Switch</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">79</span><span class="list-cell list-num">8,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">Zelda II: The Adventure of Link</span><span class="list-cell list-platform">Nintendo Entertainment System (NES)</span><span class="list-cell list-status">Want to Play</span><span class="list-cell list-num">78</span><span class="list-cell list-num">9,00</span></div>
+          <div class="list-row"><span class="list-cell list-name">ZombiU</span><span class="list-cell list-platform">Wii U</span><span class="list-cell list-status">Done</span><span class="list-cell list-num">77</span><span class="list-cell list-num"></span></div>
+          <!-- rows:end -->
+        </div>
+      </div>
+    </div>
+
+    <p id="list-count-paper" class="list-count" data-layout-allow-overlap>237</p>
+
+    <div id="list-night">
+      <p id="list-count-night" class="list-count" data-layout-allow-overlap>237</p>
+      <p id="list-caption" data-layout-ignore>games · synced from Notion</p>
+      <div id="list-track"></div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const tl = gsap.timeline({ paused: true });
+
+      // Rows crawl, then rush: expo.in keeps the first seconds readable. The blur follows the speed.
+      tl.fromTo("#list-body", { y: 0 }, { y: -15396, duration: 4.95, ease: "expo.in" }, 0);
+      tl.fromTo(
+        "#list-vblur-amount",
+        { attr: { stdDeviation: "0 0" } },
+        { attr: { stdDeviation: "0 28" }, duration: 4.95, ease: "expo.in" },
+        0,
+      );
+
+      // "237 games in Notion": the number is there on frame 0, the rest arrives word by word.
+      tl.fromTo(
+        "#list-title-1 .w:not(:first-child)",
+        { opacity: 0, filter: "blur(6px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.13, stagger: 0.067, ease: "power2.out" },
+        0.1,
+      );
+      tl.to("#list-title-1 .w", { opacity: 0, filter: "blur(8px)", duration: 0.15, stagger: 0.04, ease: "power3.in" }, 2.3);
+
+      tl.fromTo(
+        "#list-title-2 .w",
+        { opacity: 0, filter: "blur(6px)" },
+        { opacity: 1, filter: "blur(0px)", duration: 0.13, stagger: 0.067, ease: "power2.out" },
+        2.55,
+      );
+      tl.to("#list-title-2 .w", { opacity: 0, filter: "blur(8px)", duration: 0.15, stagger: 0.04, ease: "power3.in" }, 4.4);
+
+      // The list folds into its count: the table collapses onto the number's centre line.
+      tl.fromTo(
+        "#list-table",
+        { scaleY: 1, transformOrigin: "50% 222.7px" },
+        { scaleY: 0.004, duration: 0.42, ease: "power3.in" },
+        4.55,
+      );
+      tl.to("#list-table", { opacity: 0, duration: 0.06 }, 4.94);
+      tl.fromTo(
+        "#list-count-paper",
+        { scaleY: 0.02, opacity: 0, transformOrigin: "50% 50%" },
+        { scaleY: 1, opacity: 1, duration: 0.42, ease: "expo.out" },
+        4.9,
+      );
+
+      // Night rises like the app's curtain, already at 237.
+      tl.fromTo(
+        "#list-night",
+        { clipPath: "inset(100% 0% 0% 0%)" },
+        { clipPath: "inset(0% 0% 0% 0%)", duration: 0.55, ease: "expo.inOut" },
+        5.3,
+      );
+
+      window.__timelines["list"] = tl;
+    })();
+  </script>
+</template>
