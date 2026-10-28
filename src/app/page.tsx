@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LibraryExperience } from "@/components/library-experience";
+import { getEditMode } from "@/lib/edit-access";
 import { getLibrary } from "@/lib/library";
 import { computeStats } from "@/lib/stats";
 
@@ -14,5 +15,5 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Home() {
   const library = await getLibrary();
-  return <LibraryExperience library={library} stats={computeStats(library.games)} />;
+  return <LibraryExperience library={library} stats={computeStats(library.games)} editMode={getEditMode()} />;
 }
