@@ -10,7 +10,9 @@ import {
   metacriticTone,
   TONE_STYLE,
 } from "@/lib/format";
+import type { EditMode } from "@/lib/edit-access";
 import { FAMILY_LABEL, platformMeta } from "@/lib/platforms";
+import { ratingOutOf20 } from "@/lib/review";
 import type { Game, PlayModes } from "@/lib/types";
 import { SERIES_ACCENT } from "./charts";
 import { StatusDot } from "./game-card";
@@ -27,10 +29,13 @@ import {
   SwordsIcon,
   UsersIcon,
 } from "./icons";
+import { ReviewForm } from "./review-form";
 import { useLenisRef } from "./smooth-scroll";
 
 interface GameModalProps {
   game: Game | null;
+  /** Whether status, rating and feedback can be saved back to Notion. */
+  editMode: EditMode;
   /** Position within the currently filtered collection, when the game is in it. */
   position: { index: number; total: number } | null;
   /** Element the cover flies from (and back to). */
@@ -51,7 +56,7 @@ function isOnScreen(element: HTMLElement | null): element is HTMLElement {
   return box.width > 0 && box.bottom > 0 && box.top < window.innerHeight && box.right > 0 && box.left < window.innerWidth;
 }
 
-function ModalShell({ game, position, sourceRef, onClose, onStep }: GameModalProps & { game: Game }) {
+function ModalShell({ game, editMode, position, sourceRef, onClose, onStep }: GameModalProps & { game: Game }) {
   const root = useRef<HTMLDivElement>(null);
   const cover = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -135,7 +140,7 @@ function ModalShell({ game, position, sourceRef, onClose, onStep }: GameModalPro
       onStep(event.key === "ArrowLeft" ? -1 : 1);
     } else if (event.key === "Tab") {
       const focusable = root.current!.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        'a[href], button:not([disabled]), input:not([disabled]), textarea, select, [tabindex]:not([tabindex="-1"])',
       );
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -181,6 +186,7 @@ function ModalShell({ game, position, sourceRef, onClose, onStep }: GameModalPro
             <ModalBody
               key={game.id}
               game={game}
+              editMode={editMode}
               coverRef={cover}
               position={position}
               onStep={onStep}
@@ -215,6 +221,7 @@ const MODES: { key: keyof PlayModes; label: string; icon: ReactNode }[] = [
 
 function ModalBody({
   game,
+  editMode,
   coverRef,
   position,
   onStep,
@@ -222,6 +229,7 @@ function ModalBody({
   animateCover,
 }: {
   game: Game;
+  editMode: EditMode;
   coverRef: RefObject<HTMLDivElement | null>;
   position: GameModalProps["position"];
   onStep: GameModalProps["onStep"];
@@ -235,6 +243,9 @@ function ModalBody({
   const studios = game.developers.join(", ");
   const publishers = game.publishers.filter((publisher) => !game.developers.includes(publisher)).join(", ");
   const released = formatDate(game.releaseDate);
+  const rating = ratingOutOf20(game.rating);
+  // When editing is on, the feedback lives in the form instead of a notes card.
+  const notes = editMode === "off" ? game.notes : null;
 
   useGSAP(
     () => {
@@ -309,8 +320,8 @@ function ModalBody({
           ) : (
             <Fact label="Metacritic" value="—" caption="No critic score" />
           )}
-          {game.rating != null && (
-            <ScoreRing value={game.rating} color={SERIES_ACCENT} label="My rating" caption="Out of 100" />
+          {rating != null && (
+            <ScoreRing value={rating} max={20} color={SERIES_ACCENT} label="My rating" caption="Out of 20" />
           )}
           <Fact
             label="Main story"
@@ -351,6 +362,8 @@ function ModalBody({
           </div>
         )}
 
+        {editMode !== "off" && <ReviewForm game={game} mode={editMode} />}
+
         {game.description && (
           <p data-reveal-item className="mt-8 text-[16px] leading-[1.75] whitespace-pre-line text-ink-2">
             {game.description}
@@ -364,9 +377,9 @@ function ModalBody({
           </div>
         )}
 
-        {(game.notes || game.dlc) && (
+        {(notes || game.dlc) && (
           <div data-reveal-item className="mt-4 grid gap-3 sm:grid-cols-2">
-            {game.notes && <Note title="Notes" text={game.notes} />}
+            {notes && <Note title="Notes" text={notes} />}
             {game.dlc && <Note title="DLC" text={game.dlc} />}
           </div>
         )}
@@ -434,21 +447,37 @@ function Note({ title, text }: { title: string; text: string }) {
 const RADIUS = 26;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-function ScoreRing({ value, color, label, caption }: { value: number; color: string; label: string; caption: string }) {
+function ScoreRing({
+  value,
+  max = 100,
+  color,
+  label,
+  caption,
+}: {
+  value: number;
+  max?: number;
+  color: string;
+  label: string;
+  caption: string;
+}) {
   const ring = useRef<SVGCircleElement>(null);
-  const offset = CIRCUMFERENCE * (1 - Math.min(100, value) / 100);
+  const offset = CIRCUMFERENCE * (1 - Math.min(max, value) / max);
 
-  useGSAP(() => {
-    const mm = gsap.matchMedia();
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.fromTo(
-        ring.current,
-        { strokeDashoffset: CIRCUMFERENCE },
-        { strokeDashoffset: offset, duration: 1.8, delay: 0.45, ease: "expo.out" },
-      );
-    });
-    return () => mm.revert();
-  });
+  // Re-runs when the value changes (a saved rating), reverting the previous tween's inline offset.
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.fromTo(
+          ring.current,
+          { strokeDashoffset: CIRCUMFERENCE },
+          { strokeDashoffset: offset, duration: 1.8, delay: 0.45, ease: "expo.out" },
+        );
+      });
+      return () => mm.revert();
+    },
+    { dependencies: [offset] },
+  );
 
   return (
     <div className="rounded-2xl border border-line bg-black/20 p-4">

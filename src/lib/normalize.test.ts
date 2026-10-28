@@ -65,12 +65,16 @@ describe("parseHours", () => {
 });
 
 describe("normalizeRating", () => {
-  it("normalizes mixed scales to 0–100", () => {
-    expect(normalizeRating(18)).toBe(90); // out of 20
-    expect(normalizeRating(90)).toBe(90); // out of 100
-    expect(normalizeRating(8)).toBe(80); // out of 10
-    expect(normalizeRating(4)).toBe(80); // stars
+  it("reads ratings up to 20 as out of 20, larger ones as out of 100", () => {
+    expect(normalizeRating(18)).toBe(90);
+    expect(normalizeRating(8)).toBe(40);
+    expect(normalizeRating(4)).toBe(20);
+    expect(normalizeRating(90)).toBe(90);
     expect(normalizeRating(140)).toBe(100);
+  });
+
+  it("keeps half points out of 20 exact", () => {
+    expect(normalizeRating(17.5)).toBe(87.5);
   });
 
   it("treats zero and empty as unrated", () => {

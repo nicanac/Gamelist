@@ -40,8 +40,20 @@ revalidated hourly. If Notion is unreachable or misconfigured, the app logs the 
 | `mc_score`, `user_rating` | Metacritic ring, personal rating (18 → 18/20, 90 → 90/100) |
 | `genres`, `franchises`, `labels`, `developers`, `publishers` | tags, search, charts |
 | `release_date`, `hltb_main_story` (`"5,50"` → 5.5 h), `difficulty` | facts in the game view, sorting |
-| `description`, `description_short`, `notes`, `dlc` | game view text |
+| `description`, `description_short`, `notes`, `dlc` | game view text (`notes` is "My feedback") |
 | `single_player`, `local_*`, `online_*`, `lan_*`, `player_info_*_max` | play modes |
+
+## Rate and review from the game view
+
+With Notion connected, every game view has a **My take** panel: status (Playing, Finished, Dropped…), a
+rating out of 20 in half points, and free-text feedback. **Save to Notion** writes only the fields you changed
+to `status`, `user_rating` and `notes`, then refreshes the library. The integration needs edit access
+(*Update content*) to the Game List.
+
+- `npm run dev`: saving works without a password.
+- Deployed: set `EDIT_PASSWORD`; the panel then asks for it. Without it, the game view stays read-only.
+
+Ratings up to 20 are read as out of 20; older ratings above 20 as out of 100.
 
 ## Cover art
 

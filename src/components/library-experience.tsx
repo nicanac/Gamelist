@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import type { EditMode } from "@/lib/edit-access";
 import { DEFAULT_FILTERS, filterGames, type GameFilters } from "@/lib/filters";
 import { sortByName } from "@/lib/normalize";
 import type { LibraryStats } from "@/lib/stats";
@@ -19,6 +20,7 @@ import { StatsSection } from "./stats-section";
 interface LibraryExperienceProps {
   library: Library;
   stats: LibraryStats;
+  editMode: EditMode;
 }
 
 export function LibraryExperience(props: LibraryExperienceProps) {
@@ -38,7 +40,7 @@ function pickWallGames(games: Game[]): Game[] {
   return notable.sort((a, b) => hashString(`wall:${a.id}`) - hashString(`wall:${b.id}`));
 }
 
-function Experience({ library, stats }: LibraryExperienceProps) {
+function Experience({ library, stats, editMode }: LibraryExperienceProps) {
   const games = library.games;
   const [ready, setReady] = useState(false);
   const [filters, setFilters] = useState<GameFilters>(DEFAULT_FILTERS);
@@ -111,6 +113,7 @@ function Experience({ library, stats }: LibraryExperienceProps) {
 
       <GameModal
         game={openGame}
+        editMode={editMode}
         position={index >= 0 ? { index, total: visible.length } : null}
         sourceRef={sourceRef}
         onClose={close}

@@ -77,14 +77,12 @@ export function parseHours(value: string | number | null | undefined): number | 
 }
 
 /**
- * Personal ratings in the database mix scales (e.g. 18 means 18/20, 90 means
- * 90/100). Normalize to 0–100: ≤5 stars, ≤10, ≤20, otherwise /100.
+ * Personal ratings are out of 20 (18 means 18/20, half points allowed); older
+ * ones above 20 are out of 100. Normalize to 0–100 without losing half points.
  */
 export function normalizeRating(value: number | null): number | null {
   if (value == null || value <= 0) return null;
-  if (value <= 5) return Math.round(value * 20);
-  if (value <= 10) return Math.round(value * 10);
-  if (value <= 20) return Math.round(value * 5);
+  if (value <= 20) return value * 5;
   return Math.min(100, Math.round(value));
 }
 
