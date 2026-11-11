@@ -19,8 +19,12 @@ export interface PlayModes {
 }
 
 export interface Game {
-  /** Notion page id without dashes. */
+  /** Brain record UUID (Game List record id when linked, else catalog item id). */
   id: string;
+  /** Linked catalog item UUID in `cortex/catalog` (`catalog: "games"`), when present. */
+  catalogId?: string | null;
+  /** Linked Game List record UUID in `imported/game-list`, when present. */
+  gameListId?: string | null;
   /** URL-safe, unique within the library. */
   slug: string;
   name: string;
@@ -50,15 +54,16 @@ export interface Game {
   modes: PlayModes;
   /** Highest player count across all multiplayer modes, when known. */
   maxPlayers: number | null;
-  /** Absolute image URL, or an `/api/cover/...` path for Notion-hosted files. */
+  /** Absolute image URL, or an `/api/cover/...` fallback path. */
   cover: string | null;
-  notionUrl: string;
+  /** Direct link to this record in the Brain cockpit. */
+  brainUrl: string;
 }
 
 export interface Library {
   games: Game[];
   /** Where this data came from on this request. */
-  source: "notion" | "snapshot";
-  /** ISO timestamp of the last successful read from Notion. */
+  source: "brain" | "snapshot";
+  /** ISO timestamp of the last successful read from the Brain. */
   syncedAt: string;
 }

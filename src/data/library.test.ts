@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { RECORD_ID_RE } from "@/lib/review";
 import { GAME_STATUSES, type Library } from "@/lib/types";
 import snapshot from "./library.json";
 
@@ -14,7 +15,7 @@ describe("committed library snapshot", () => {
   });
 
   it.each(library.games.map((game) => [game.name, game] as const))("%s is well formed", (_name, game) => {
-    expect(game.id).toMatch(/^[0-9a-f]{32}$/);
+    expect(game.id).toMatch(RECORD_ID_RE);
     expect(game.slug).toMatch(/^[a-z0-9-]+$/);
     expect(GAME_STATUSES).toContain(game.status);
     if (game.metacritic != null) expect(game.metacritic).toBeGreaterThan(0);
@@ -23,6 +24,6 @@ describe("committed library snapshot", () => {
     if (game.releaseDate) expect(game.releaseDate).toMatch(ISO_DATE);
     if (game.hltbHours != null) expect(game.hltbHours).toBeGreaterThan(0);
     if (game.cover) expect(game.cover).toMatch(/^(https:\/\/|\/api\/cover\/)/);
-    expect(game.notionUrl).toMatch(/^https:\/\//);
+    expect(game.brainUrl).toMatch(/^https:\/\//);
   });
 });

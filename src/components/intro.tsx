@@ -93,7 +93,7 @@ export function Intro({ total, onDone }: { total: number; onDone: () => void }) 
       </div>
       <div className="mt-4 overflow-hidden">
         <span data-intro-line className="block font-mono text-xs tracking-[0.35em] text-muted uppercase">
-          games · synced from Notion
+          games · synced from Brain
         </span>
       </div>
       <div className="absolute bottom-[12vh] left-1/2 h-px w-[min(320px,60vw)] -translate-x-1/2 bg-line">

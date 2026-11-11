@@ -37,7 +37,7 @@ export function SiteNav({ library }: { library: Library }) {
     event.preventDefault();
     scrollToTarget(lenisRef.current, target, target === "#top" ? 0 : -8);
   };
-  const live = library.source === "notion";
+  const live = library.source === "brain";
 
   return (
     <header className="fixed inset-x-0 top-0 z-40 px-[var(--gutter)] pt-3">
@@ -65,7 +65,7 @@ export function SiteNav({ library }: { library: Library }) {
         </ul>
         <span
           className="hidden items-center gap-2 rounded-full bg-black/30 px-3 py-1.5 font-mono text-[11px] text-ink-2 md:inline-flex"
-          title={`Last read from Notion: ${formatSync(library.syncedAt)}`}
+          title={`Last read from Brain: ${formatSync(library.syncedAt)}`}
         >
           <span className={`h-1.5 w-1.5 rounded-full ${live ? "bg-[#0ca30c]" : "bg-[#fab219]"}`} aria-hidden="true" />
           {live ? "Live" : "Snapshot"} · {library.games.length} games
@@ -167,7 +167,7 @@ export function SiteFooter({ library }: { library: Library }) {
           </button>
         </div>
         <p className="max-w-md font-mono text-[11px] leading-relaxed text-muted">
-          {library.games.length} games · {library.source === "notion" ? "read live from Notion" : "Notion snapshot"},{" "}
+          {library.games.length} games · {library.source === "brain" ? "read live from Brain" : "Brain snapshot"},{" "}
           {formatSync(library.syncedAt)}. Built with Next.js, GSAP and Lenis.
         </p>
       </div>

@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const finished = games.filter((game) => game.status === "Done").length;
   return {
     title: `Game Library · ${games.length} games`,
-    description: `${games.length} games, ${finished} finished: a personal game library synced from Notion.`,
+    description: `${games.length} games, ${finished} finished: a personal game library synced from Brain.`,
   };
 }
 

@@ -84,7 +84,7 @@ export function Hero({ stats, wallGames, source, syncedAt, ready, onExplore }: H
     entrance.current = null;
   }, [ready]);
 
-  const live = source === "notion";
+  const live = source === "brain";
   const dot = live ? "bg-[#0ca30c]" : "bg-[#fab219]";
 
   return (
@@ -104,7 +104,7 @@ export function Hero({ stats, wallGames, source, syncedAt, ready, onExplore }: H
           <span className={`relative inline-flex h-2 w-2 rounded-full ${dot}`}>
             <span className={`absolute inset-0 animate-ping rounded-full ${dot}`} />
           </span>
-          {live ? "Live from Notion" : "Notion snapshot"} · {formatSync(syncedAt)}
+          {live ? "Live from Brain" : "Brain snapshot"} · {formatSync(syncedAt)}
         </p>
 
         <div className="font-display text-[clamp(52px,12.5vw,210px)] leading-[0.86] font-black tracking-[-0.045em] uppercase">
@@ -137,7 +137,7 @@ export function Hero({ stats, wallGames, source, syncedAt, ready, onExplore }: H
         <div data-hero-fade className="mt-10 flex flex-wrap items-end justify-between gap-6">
           <p className="max-w-md text-[15px] leading-relaxed text-balance text-ink-2">
             {stats.total} games across {stats.platformCount} platforms and {stats.franchiseCount} franchises, every
-            one of them tracked in Notion.
+            one of them tracked in your Brain.
           </p>
           <button
             type="button"

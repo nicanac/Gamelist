@@ -11,9 +11,9 @@ import type { Game, GameStatus } from "@/lib/types";
 type Message = { tone: "saved" | "error"; text: string } | null;
 
 /**
- * Status, rating out of 20 and feedback for one game, saved to its Notion
- * page. Only the fields that changed are sent, so edits made in Notion to
- * the others are kept.
+ * Status, rating out of 20 and feedback for one game, saved back to your Brain
+ * (both Game List and the `games` catalog). Only the fields that changed are
+ * sent, so edits made in Brain to other properties are kept.
  */
 export function ReviewForm({ game, mode }: { game: Game; mode: Exclude<EditMode, "off"> }) {
   const ids = useId();
@@ -46,11 +46,11 @@ export function ReviewForm({ game, mode }: { game: Game; mode: Exclude<EditMode,
     }
     startTransition(async () => {
       const result = await saveReview(parsed.review, mode === "password" ? password : undefined);
-      setMessage(result.ok ? { tone: "saved", text: "Saved to Notion." } : { tone: "error", text: result.error });
+      setMessage(result.ok ? { tone: "saved", text: "Saved to Brain." } : { tone: "error", text: result.error });
     });
   };
 
-  const hint = pending ? "Saving to Notion…" : (message?.text ?? (dirty ? "Unsaved changes" : ""));
+  const hint = pending ? "Saving to Brain…" : (message?.text ?? (dirty ? "Unsaved changes" : ""));
 
   return (
     <form
@@ -63,7 +63,7 @@ export function ReviewForm({ game, mode }: { game: Game; mode: Exclude<EditMode,
         <h3 id={`${ids}-title`} className="font-mono text-[11px] tracking-[0.25em] text-muted uppercase">
           My take
         </h3>
-        <p className="text-xs text-muted">Saved to your Notion Game List</p>
+        <p className="text-xs text-muted">Synced with your Brain catalog</p>
       </div>
 
       <fieldset className="mt-4">
@@ -163,7 +163,7 @@ export function ReviewForm({ game, mode }: { game: Game; mode: Exclude<EditMode,
           disabled={!dirty || pending}
           className="rounded-full bg-ink px-5 py-2.5 text-[13px] font-semibold text-bg transition-opacity hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Save to Notion
+          Save to Brain
         </button>
       </div>
     </form>

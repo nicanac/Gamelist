@@ -1,6 +1,7 @@
 /**
- * Pulls the Game List from Notion into src/data/library.json and bakes in
- * cover art, so the app has fast, stable data even without NOTION_TOKEN.
+ * Pulls the Game Library from the Brain (`cortex/catalog` `games` +
+ * `imported/game-list`) into `src/data/library.json` and bakes in cover art,
+ * so the app has fast, stable fallback data even without `BRAIN_TOKEN`.
  *
  *   npm run sync                    # reuse covers resolved by earlier syncs
  *   npm run sync -- --refresh-covers
@@ -9,9 +10,8 @@
 import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fetchGamesFromBrain, getBrainConfig } from "../src/lib/brain";
 import { createLimiter, igdbFromEnv, resolveCover } from "../src/lib/covers";
-import { createNotionClient, fetchNotionPages, findPageImage, getNotionConfig } from "../src/lib/notion";
-import { assignSlugs, normalizePage, sortByName, type NotionPageLike } from "../src/lib/normalize";
 import type { Game, Library } from "../src/lib/types";
 
 const OUTPUT = path.join(process.cwd(), "src/data/library.json");
@@ -28,29 +28,26 @@ async function readPreviousCovers(): Promise<Map<string, string>> {
 }
 
 async function main() {
-  const config = getNotionConfig();
+  const config = getBrainConfig();
   if (!config) {
-    console.error("Set NOTION_TOKEN and NOTION_DATA_SOURCE_ID (or NOTION_DATABASE_ID) in .env.local first.");
+    console.error("Set BRAIN_TOKEN in .env.local (or env) first.");
     process.exit(1);
   }
 
-  const client = createNotionClient(config.token);
-  console.log("Reading the Game List from Notion…");
-  const pages = await fetchNotionPages(config, client);
-  let games: Game[] = sortByName(assignSlugs(pages.map((page) => normalizePage(page as NotionPageLike))));
+  console.log(`Reading the games catalog from ${config.apiUrl}…`);
+  let games: Game[] = await fetchGamesFromBrain(config);
   console.log(`  ${games.length} games`);
 
-  if (!args.has("--no-covers")) games = await addCovers(games, client);
+  if (!args.has("--no-covers")) games = await addCovers(games);
 
   const library: Library = { games, source: "snapshot", syncedAt: new Date().toISOString() };
   await writeFile(OUTPUT, `${JSON.stringify(library, null, 2)}\n`);
   console.log(`Wrote ${path.relative(process.cwd(), OUTPUT)}`);
 }
 
-async function addCovers(games: Game[], client: ReturnType<typeof createNotionClient>) {
+async function addCovers(games: Game[]) {
   const previous = await readPreviousCovers();
   const igdb = igdbFromEnv();
-  const notionQueue = createLimiter(2);
   const lookupQueue = createLimiter(4);
   const sources = new Map<string, number>();
   const tally = (game: Game, source: string, cover = game.cover): Game => {
@@ -61,12 +58,9 @@ async function addCovers(games: Game[], client: ReturnType<typeof createNotionCl
   console.log(`Resolving covers${igdb ? " (IGDB + Wikipedia)" : " (Wikipedia; set IGDB_CLIENT_ID/SECRET for sharper art)"}…`);
   const result = await Promise.all(
     games.map(async (game): Promise<Game> => {
-      if (game.cover) return tally(game, "notion cover");
+      if (game.cover) return tally(game, "brain cover");
       const cached = previous.get(game.id);
       if (cached) return tally(game, "previous sync", cached);
-
-      const pageImage = await notionQueue(() => findPageImage(client, game.id)).catch(() => null);
-      if (pageImage) return tally(game, "page image", pageImage);
 
       const year = game.releaseDate ? Number(game.releaseDate.slice(0, 4)) : null;
       const lookup = await lookupQueue(() => resolveCover({ name: game.name, platform: game.platform, year }, { igdb }));

@@ -1,7 +1,7 @@
 # Next.js (output: "standalone") -> node server on :3000, health at /api/health.
-# Built by Dokploy on nicode (gamelist.nicode.eu); runtime env (NOTION_TOKEN, …) comes from Dokploy.
-# Without NOTION_TOKEN at build time the prerendered page starts from src/data/library.json and
-# switches to live Notion data on the first hourly revalidation (or POST /api/revalidate).
+# Built by Dokploy on nicode (gamelist.nicode.eu); runtime env (BRAIN_TOKEN, …) comes from Dokploy.
+# Without BRAIN_TOKEN at build time the prerendered page starts from src/data/library.json and
+# switches to live Brain data on revalidation (or POST /api/revalidate).
 FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
