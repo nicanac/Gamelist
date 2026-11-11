@@ -97,8 +97,17 @@ async function brainJson<T>(
     }
   }
   if (!response.ok) {
-    const err = data as { code?: string; detail?: string; title?: string } | null;
-    const message = err?.detail || err?.title || `HTTP ${response.status}`;
+    const err = data as {
+      code?: string;
+      detail?: string;
+      title?: string;
+      errors?: { pointer?: string; message?: string }[];
+    } | null;
+    const details = err?.errors
+      ?.map((item) => [item.pointer, item.message].filter(Boolean).join(": "))
+      .filter(Boolean)
+      .join("; ");
+    const message = [err?.detail || err?.title || `HTTP ${response.status}`, details].filter(Boolean).join(" — ");
     throw Object.assign(new Error(`Brain API ${response.status}: ${message}`), {
       status: response.status,
       code: err?.code,
@@ -241,6 +250,13 @@ export async function fetchGamesFromBrain(
   return sortByName(assignSlugs(games));
 }
 
+/** Brain API requires quoted ETag values in `If-Match` (`"^\"(v[0-9]{1,18}|[0-9a-f]{40})\"$"`). */
+function formatIfMatch(raw: string | null | undefined): string | undefined {
+  if (!raw) return undefined;
+  const cleaned = raw.trim().replace(/^W\//i, "").replace(/^"+|"+$/g, "");
+  return cleaned ? `"${cleaned}"` : undefined;
+}
+
 async function readRecordTag(
   config: BrainConfig,
   recordId: string,
@@ -252,10 +268,10 @@ async function readRecordTag(
     { method: "GET" },
     fetchImpl,
   );
-  const etag = headers.get("etag")?.replace(/^"|"$/g, "");
+  const etag = formatIfMatch(headers.get("etag"));
   if (etag) return etag;
   const version = data.record?.version ?? data.version;
-  return typeof version === "number" ? `v${version}` : undefined;
+  return typeof version === "number" ? `"v${version}"` : undefined;
 }
 
 export async function patchBrainRecord(
@@ -289,9 +305,9 @@ export async function patchBrainRecord(
     const err = error as { status?: number; payload?: { current_etag?: string; current_version?: number } };
     if (err.status !== 412) throw error;
     const retryTag =
-      err.payload?.current_etag ??
+      formatIfMatch(err.payload?.current_etag) ??
       (typeof err.payload?.current_version === "number"
-        ? `v${err.payload.current_version}`
+        ? `"v${err.payload.current_version}"`
         : await readRecordTag(config, recordId, fetchImpl));
     res = await send(retryTag);
   }

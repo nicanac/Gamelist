@@ -186,15 +186,15 @@ describe("syncReviewToBrain", () => {
     );
 
     expect(patchCalls).toHaveLength(3);
-    expect(patchCalls[0]).toMatchObject({ url: "https://api.test/v1/records/gl-1", ifMatch: "blob-old" });
+    expect(patchCalls[0]).toMatchObject({ url: "https://api.test/v1/records/gl-1", ifMatch: '"blob-old"' });
     expect(patchCalls[1]).toMatchObject({
       url: "https://api.test/v1/records/gl-1",
-      ifMatch: "blob-fresh",
+      ifMatch: '"blob-fresh"',
       body: { props: { status: "Done", user_rating: 19, notes: "Masterpiece." } },
     });
     expect(patchCalls[2]).toMatchObject({
       url: "https://api.test/v1/records/cat-1",
-      ifMatch: "blob-cat",
+      ifMatch: '"blob-cat"',
       body: { props: { state: "In use" } },
     });
     expect(getLatestCommit()).toBe("sha-2");
