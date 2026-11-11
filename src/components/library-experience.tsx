@@ -4,7 +4,8 @@ import { useMemo, useRef, useState } from "react";
 import type { EditMode } from "@/lib/edit-access";
 import { DEFAULT_FILTERS, filterGames, type GameFilters } from "@/lib/filters";
 import { sortByName } from "@/lib/normalize";
-import type { LibraryStats } from "@/lib/stats";
+import { applyReviewToGame, type Review } from "@/lib/review";
+import { computeStats, type LibraryStats } from "@/lib/stats";
 import { hashString } from "@/lib/text";
 import type { Game, Library } from "@/lib/types";
 import { setSearchParam, useSearchParam } from "@/hooks/use-search-param";
@@ -40,8 +41,29 @@ function pickWallGames(games: Game[]): Game[] {
   return notable.sort((a, b) => hashString(`wall:${a.id}`) - hashString(`wall:${b.id}`));
 }
 
-function Experience({ library, stats, editMode }: LibraryExperienceProps) {
-  const games = library.games;
+function Experience({ library, stats: initialStats, editMode }: LibraryExperienceProps) {
+  const [savedReviews, setSavedReviews] = useState<Map<string, Review>>(() => new Map());
+  const games = useMemo(
+    () =>
+      savedReviews.size === 0
+        ? library.games
+        : library.games.map((game) => {
+            const override = savedReviews.get(game.id);
+            return override ? applyReviewToGame(game, override) : game;
+          }),
+    [library.games, savedReviews],
+  );
+  const stats = useMemo(
+    () => (savedReviews.size === 0 ? initialStats : computeStats(games)),
+    [savedReviews.size, initialStats, games],
+  );
+  const handleSaved = (review: Review) => {
+    setSavedReviews((prev) => {
+      const next = new Map(prev);
+      next.set(review.id, { ...prev.get(review.id), ...review });
+      return next;
+    });
+  };
   const [ready, setReady] = useState(false);
   const [filters, setFilters] = useState<GameFilters>(DEFAULT_FILTERS);
   const sourceRef = useRef<HTMLElement | null>(null);
@@ -118,6 +140,7 @@ function Experience({ library, stats, editMode }: LibraryExperienceProps) {
         sourceRef={sourceRef}
         onClose={close}
         onStep={step}
+        onSaved={handleSaved}
       />
     </>
   );

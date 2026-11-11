@@ -29,7 +29,7 @@ export function setSearchParam(name: string, value: string | null, mode: "push" 
   if (value == null) url.searchParams.delete(name);
   else url.searchParams.set(name, value);
   const next = `${url.pathname}${url.search}${url.hash}`;
-  if (mode === "push") window.history.pushState(window.history.state, "", next);
-  else window.history.replaceState(window.history.state, "", next);
+  if (mode === "push") window.history.pushState(null, "", next);
+  else window.history.replaceState(null, "", next);
   listeners.forEach((listener) => listener());
 }

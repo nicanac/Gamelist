@@ -1,5 +1,5 @@
 import { cleanText } from "./text";
-import { GAME_STATUSES, type GameStatus } from "./types";
+import { GAME_STATUSES, type Game, type GameStatus } from "./types";
 
 /** What can be edited from the game view. Absent fields are left unchanged in the Brain. */
 export interface Review {
@@ -115,4 +115,14 @@ export function toCatalogProps(
     props.rating = review.rating === null ? null : Math.max(1, Math.min(5, Math.round(review.rating / 4)));
   }
   return props;
+}
+
+/** Applies a saved review onto an in-memory `Game` without losing unrelated fields. */
+export function applyReviewToGame(game: Game, review: Review): Game {
+  return {
+    ...game,
+    ...(review.status !== undefined ? { status: review.status } : {}),
+    ...(review.rating !== undefined ? { rating: review.rating === null ? null : Math.round(review.rating * 5) } : {}),
+    ...(review.notes !== undefined ? { notes: review.notes || null } : {}),
+  };
 }

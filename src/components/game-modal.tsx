@@ -12,7 +12,7 @@ import {
 } from "@/lib/format";
 import type { EditMode } from "@/lib/edit-access";
 import { FAMILY_LABEL, platformMeta } from "@/lib/platforms";
-import { ratingOutOf20 } from "@/lib/review";
+import { ratingOutOf20, type Review } from "@/lib/review";
 import type { Game, PlayModes } from "@/lib/types";
 import { SERIES_ACCENT } from "./charts";
 import { StatusDot } from "./game-card";
@@ -42,6 +42,7 @@ interface GameModalProps {
   sourceRef: RefObject<HTMLElement | null>;
   onClose: () => void;
   onStep: (direction: -1 | 1) => void;
+  onSaved?: (review: Review) => void;
 }
 
 export function GameModal(props: GameModalProps) {
@@ -56,7 +57,7 @@ function isOnScreen(element: HTMLElement | null): element is HTMLElement {
   return box.width > 0 && box.bottom > 0 && box.top < window.innerHeight && box.right > 0 && box.left < window.innerWidth;
 }
 
-function ModalShell({ game, editMode, position, sourceRef, onClose, onStep }: GameModalProps & { game: Game }) {
+function ModalShell({ game, editMode, position, sourceRef, onClose, onStep, onSaved }: GameModalProps & { game: Game }) {
   const root = useRef<HTMLDivElement>(null);
   const cover = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -88,15 +89,30 @@ function ModalShell({ game, editMode, position, sourceRef, onClose, onStep }: Ga
       const source = sourceRef.current;
       const timeline = gsap.timeline();
       timeline
-        .from("[data-modal-backdrop]", { autoAlpha: 0, duration: 0.6, ease: "power2.out" }, 0)
-        .from("[data-modal-surface]", { autoAlpha: 0, y: 40, scale: 0.98, duration: 1, ease: "expo.out" }, 0.12);
+        .from("[data-modal-backdrop]", { autoAlpha: 0, duration: 0.6, ease: "power2.out", clearProps: "opacity,visibility" }, 0)
+        .from(
+          "[data-modal-surface]",
+          { autoAlpha: 0, y: 40, scale: 0.98, duration: 1, ease: "expo.out", clearProps: "opacity,visibility,transform" },
+          0.12,
+        );
+      let flipped = false;
       if (isOnScreen(source) && cover.current) {
-        const from = Flip.fit(cover.current, source, { scale: true, getVars: true }) as gsap.TweenVars;
-        timeline.from(cover.current, { ...from, duration: 1, ease: "expo.inOut" }, 0);
-        source.style.visibility = "hidden";
-        hiddenSource.current = source;
-      } else {
-        timeline.from(cover.current, { autoAlpha: 0, y: 50, scale: 0.94, duration: 1, ease: "expo.out" }, 0.15);
+        try {
+          const from = Flip.fit(cover.current, source, { scale: true, getVars: true }) as gsap.TweenVars;
+          timeline.from(cover.current, { ...from, duration: 1, ease: "expo.inOut", clearProps: "transform" }, 0);
+          source.style.visibility = "hidden";
+          hiddenSource.current = source;
+          flipped = true;
+        } catch {
+          // Layout measurement failed; fall back to standard reveal.
+        }
+      }
+      if (!flipped) {
+        timeline.from(
+          cover.current,
+          { autoAlpha: 0, y: 50, scale: 0.94, duration: 1, ease: "expo.out", clearProps: "opacity,visibility,transform" },
+          0.15,
+        );
       }
     },
     { scope: root },
@@ -160,7 +176,7 @@ function ModalShell({ game, editMode, position, sourceRef, onClose, onStep }: Ga
       role="dialog"
       aria-modal="true"
       aria-labelledby="game-dialog-title"
-      className="fixed inset-0 z-[60]"
+      className="fixed inset-0 z-[60] isolate"
       onKeyDown={onKeyDown}
     >
       <div data-modal-backdrop className="absolute inset-0 bg-[rgb(5_5_8/0.8)] backdrop-blur-xl" />
@@ -190,6 +206,7 @@ function ModalShell({ game, editMode, position, sourceRef, onClose, onStep }: Ga
               coverRef={cover}
               position={position}
               onStep={onStep}
+              onSaved={onSaved}
               delay={game.id === firstGameId ? 0.35 : 0}
               animateCover={game.id !== firstGameId}
             />
@@ -225,6 +242,7 @@ function ModalBody({
   coverRef,
   position,
   onStep,
+  onSaved,
   delay,
   animateCover,
 }: {
@@ -233,6 +251,7 @@ function ModalBody({
   coverRef: RefObject<HTMLDivElement | null>;
   position: GameModalProps["position"];
   onStep: GameModalProps["onStep"];
+  onSaved?: (review: Review) => void;
   delay: number;
   animateCover: boolean;
 }) {
@@ -362,7 +381,7 @@ function ModalBody({
           </div>
         )}
 
-        {editMode !== "off" && <ReviewForm game={game} mode={editMode} />}
+        {editMode !== "off" && <ReviewForm game={game} mode={editMode} onSaved={onSaved} />}
 
         {game.description && (
           <p data-reveal-item className="mt-8 text-[16px] leading-[1.75] whitespace-pre-line text-ink-2">

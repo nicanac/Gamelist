@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getEditMode, passwordMatches } from "./edit-access";
 import {
+  applyReviewToGame,
   catalogStateToStatus,
   parseReview,
   ratingOutOf20,
@@ -126,5 +127,48 @@ describe("passwordMatches", () => {
     expect(passwordMatches("hunter2", "hunter2")).toBe(true);
     expect(passwordMatches("hunter", "hunter2")).toBe(false);
     expect(passwordMatches(undefined, "hunter2")).toBe(false);
+  });
+});
+
+describe("applyReviewToGame", () => {
+  const baseGame = {
+    id: ID,
+    slug: "ocarina-of-time-switch-2",
+    name: "Ocarina of Time (Switch 2)",
+    platform: "Nintendo Switch",
+    status: "Not started" as const,
+    metacritic: 96,
+    rating: null,
+    genres: [],
+    franchises: [],
+    developers: [],
+    publishers: [],
+    labels: [],
+    difficulty: "Medium",
+    releaseDate: null,
+    addedOn: null,
+    hltbHours: null,
+    playtimeHours: null,
+    summary: null,
+    description: null,
+    dlc: null,
+    notes: "Initial",
+    modes: { solo: true, localCoop: false, localVersus: false, onlineCoop: false, onlineVersus: false, lan: false },
+    maxPlayers: null,
+    cover: null,
+    brainUrl: "https://brain.nicode.eu",
+  };
+
+  it("merges changed status, scaled rating and cleared notes without clobbering untouched fields", () => {
+    expect(applyReviewToGame(baseGame, { id: ID, rating: 19 })).toMatchObject({
+      status: "Not started",
+      rating: 95,
+      notes: "Initial",
+    });
+    expect(applyReviewToGame(baseGame, { id: ID, status: "Done", rating: null, notes: "" })).toMatchObject({
+      status: "Done",
+      rating: null,
+      notes: null,
+    });
   });
 });
