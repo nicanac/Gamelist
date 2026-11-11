@@ -3,6 +3,19 @@
 All notable changes to **Gamelist** are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.2.0] - 2026-11-11
+
+### Added
+- feat(brain): sync game library and reviews with Brain catalog (`1af243e`)
+
+### Fixed
+- fix(brain): quote If-Match ETag and use 20-pip segmented rating UI (`7dd54dc`)
+- fix(deps): regenerate package-lock.json for node:24-alpine (`59ab2d2`)
+- fix(deps): remove @notionhq/client from package-lock.json (`dd01d1b`)
+
+### Chores
+- chore(ci): switch to Variant C zero-Actions VPS CI & release workflow (`4833624`)
 ## [0.1.2] - 2026-10-31
 
 ### Changed
