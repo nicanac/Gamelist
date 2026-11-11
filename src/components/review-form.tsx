@@ -1,9 +1,8 @@
 "use client";
 
 import { useId, useState, useTransition, type FormEvent } from "react";
-import { saveReview } from "@/app/actions";
 import type { EditMode } from "@/lib/edit-access";
-import { parseReview, ratingOutOf20 } from "@/lib/review";
+import { parseReview, ratingOutOf20, type Review, type SaveReviewResult } from "@/lib/review";
 import { STATUS_ORDER } from "@/lib/status";
 import { cleanText } from "@/lib/text";
 import type { Game, GameStatus } from "@/lib/types";
@@ -16,7 +15,15 @@ type Message = { tone: "saved" | "error"; text: string } | null;
  * (both Game List and the `games` catalog). Only the fields that changed are
  * sent, so edits made in Brain to other properties are kept.
  */
-export function ReviewForm({ game, mode }: { game: Game; mode: Exclude<EditMode, "off"> }) {
+export function ReviewForm({
+  game,
+  mode,
+  onSaved,
+}: {
+  game: Game;
+  mode: Exclude<EditMode, "off">;
+  onSaved?: (review: Review) => void;
+}) {
   const ids = useId();
   const savedRating = ratingOutOf20(game.rating);
   const [status, setStatus] = useState<GameStatus>(game.status);
@@ -45,8 +52,25 @@ export function ReviewForm({ game, mode }: { game: Game; mode: Exclude<EditMode,
       return;
     }
     startTransition(async () => {
-      const result = await saveReview(parsed.review, mode === "password" ? password : undefined);
-      setMessage(result.ok ? { tone: "saved", text: "Saved to Brain." } : { tone: "error", text: result.error });
+      try {
+        const response = await fetch("/api/review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            review: parsed.review,
+            ...(mode === "password" ? { password } : {}),
+          }),
+        });
+        const result = (await response.json()) as SaveReviewResult;
+        if (result.ok) {
+          onSaved?.(parsed.review);
+          setMessage({ tone: "saved", text: "Saved to Brain." });
+        } else {
+          setMessage({ tone: "error", text: result.error });
+        }
+      } catch {
+        setMessage({ tone: "error", text: "Could not reach the server to save your review." });
+      }
     });
   };
 
