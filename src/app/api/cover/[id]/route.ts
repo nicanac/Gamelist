@@ -1,31 +1,19 @@
 import type { NextRequest } from "next/server";
 import { igdbFromEnv, resolveCover } from "@/lib/covers";
-import { fetchNotionCoverUrl } from "@/lib/notion";
+import { RECORD_ID_RE } from "@/lib/review";
 
 const HOUR = 60 * 60;
 const DAY = 24 * HOUR;
 
 /**
- * Redirects to a game's cover art. `?notion=1` re-signs a Notion-hosted page
- * cover (those URLs expire after an hour); otherwise the cover is looked up
- * by `name`, `platform` and `year`. A 404 lets the client keep its generated
- * artwork. Responses carry CDN cache headers so each game is resolved rarely.
+ * Redirects to a game's cover art, looked up by `name`, `platform` and `year`.
+ * A 404 lets the client keep its generated artwork. Responses carry CDN cache
+ * headers so each game is resolved rarely.
  */
 export async function GET(request: NextRequest, context: RouteContext<"/api/cover/[id]">) {
   const { id } = await context.params;
   const params = request.nextUrl.searchParams;
-  if (!/^[0-9a-f]{32}$/i.test(id)) return notFound(DAY);
-
-  if (params.get("notion") === "1") {
-    const token = process.env.NOTION_TOKEN;
-    if (!token) return notFound(HOUR);
-    try {
-      const url = await fetchNotionCoverUrl(token, id);
-      return url ? redirectTo(url, 30 * 60) : notFound(HOUR);
-    } catch {
-      return notFound(5 * 60);
-    }
-  }
+  if (!RECORD_ID_RE.test(id)) return notFound(DAY);
 
   const name = params.get("name")?.trim();
   if (!name || name.length > 200) return notFound(DAY);

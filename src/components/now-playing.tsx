@@ -82,7 +82,7 @@ export function NowPlaying({ games, onOpen }: NowPlayingProps) {
         <span className="outline-text">in progress</span>
       </h2>
       <p className="mt-6 max-w-sm text-[15px] leading-relaxed text-ink-2">
-        The current rotation, everything marked <em className="text-ink not-italic">In progress</em> in Notion.
+        The current rotation, everything marked <em className="text-ink not-italic">In progress</em> in your Brain.
       </p>
     </>
   );

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   // Vercel deployments resolve this automatically; elsewhere set SITE_URL for social previews.
   metadataBase: process.env.SITE_URL ? new URL(process.env.SITE_URL) : undefined,
   title: "Game Library",
-  description: "Every game I have played, am playing and want to play, synced live from Notion.",
+  description: "Every game I have played, am playing and want to play, synced live from Brain.",
 };
 
 export const viewport: Viewport = {

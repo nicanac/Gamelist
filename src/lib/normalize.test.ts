@@ -1,48 +1,64 @@
 import { describe, expect, it } from "vitest";
 import {
   assignSlugs,
-  normalizePage,
+  normalizeBrainGame,
   normalizeRating,
   parseHours,
   splitLabels,
   toStatus,
-  type NotionPageLike,
+  type BrainRecordLike,
 } from "./normalize";
 import type { Game } from "./types";
 
-const text = (value: string) => [{ plain_text: value }];
+function deadCellsCatalog(overrides: Partial<BrainRecordLike> = {}): BrainRecordLike {
+  return {
+    id: "707f02a4-1111-4111-8111-111111111111",
+    title: "Dead Cells",
+    updated_at: "2026-11-10T11:13:55Z",
+    props: {
+      catalog: "games",
+      key: "0b133b50-d15f-413d-abb7-6913b255bff5",
+      category: "PlayStation 4 & 3",
+      platform: "PlayStation 4",
+      state: "In use",
+      score: 88,
+      year: 2018,
+      publisher: "Motion Twin",
+      description: "Fallback catalog description.",
+    },
+    ...overrides,
+  };
+}
 
-/** Shaped like a Notion API page from the Game List data source. */
-function deadCellsPage(overrides: Partial<NotionPageLike> = {}): NotionPageLike {
+function deadCellsGameList(overrides: Partial<BrainRecordLike> = {}): BrainRecordLike {
   return {
     id: "0b133b50-d15f-413d-abb7-6913b255bff5",
-    url: "https://www.notion.so/Dead-Cells-0b133b50d15f413dabb76913b255bff5",
-    cover: null,
-    properties: {
-      name: { type: "title", title: text("Dead Cells") },
-      platforms: { type: "select", select: { name: "PlayStation 4" } },
-      status: { type: "status", status: { name: "Done" } },
-      mc_score: { type: "number", number: 88 },
-      user_rating: { type: "number", number: 18 },
-      genres: { type: "multi_select", multi_select: [{ name: "Platform" }, { name: "Indie" }] },
-      franchises: { type: "multi_select", multi_select: [] },
-      developers: { type: "multi_select", multi_select: [{ name: "Motion Twin" }] },
-      publishers: { type: "multi_select", multi_select: [{ name: "Motion Twin" }] },
-      labels: { type: "rich_text", rich_text: text("Rogue-lite, Metroidvania, , Indie") },
-      difficulty: { type: "rich_text", rich_text: text("Hard") },
-      release_date: { type: "date", date: { start: "2018-08-07", end: null } },
-      added_on: { type: "date", date: null },
-      hltb_main_story: { type: "rich_text", rich_text: text("14,50") },
-      playtime_minutes: { type: "number", number: 0 },
-      description: { type: "rich_text", rich_text: text("Kill, die, learn, repeat.\n\n\n\nNo checkpoints.") },
-      description_short: { type: "rich_text", rich_text: text("Roguelite Metroidvania.") },
-      dlc: { type: "rich_text", rich_text: [] },
-      notes: { type: "rich_text", rich_text: [] },
-      single_player: { type: "checkbox", checkbox: true },
-      local_coop_story: { type: "checkbox", checkbox: false },
-      online_versus: { type: "checkbox", checkbox: true },
-      player_info_online_versus_mode_max: { type: "number", number: 4 },
-      Platform: { type: "relation", relation: [{ id: "x" }] },
+    title: "Dead Cells",
+    updated_at: "2026-11-10T11:13:55Z",
+    props: {
+      platforms: "PlayStation 4",
+      status: "Done",
+      mc_score: 88,
+      user_rating: 18,
+      genres: ["Platform", "Indie"],
+      franchises: [],
+      developers: ["Motion Twin"],
+      publishers: ["Motion Twin"],
+      labels: "Rogue-lite, Metroidvania, , Indie",
+      difficulty: "Hard",
+      release_date: { start: "2018-08-07", end: null, time_zone: null },
+      added_on: null,
+      hltb_main_story: "14,50",
+      playtime_minutes: 0,
+      description: "Kill, die, learn, repeat.\n\n\n\nNo checkpoints.",
+      description_short: "Roguelite Metroidvania.",
+      dlc: "",
+      notes: "",
+      single_player: true,
+      local_coop_story: false,
+      online_versus: true,
+      player_info_online_versus_mode_max: 4,
+      cover_url: "https://images.igdb.com/igdb/image/upload/t_cover_big_2x/co1234.jpg",
     },
     ...overrides,
   };
@@ -84,7 +100,7 @@ describe("normalizeRating", () => {
 });
 
 describe("toStatus", () => {
-  it("matches Notion status names case-insensitively", () => {
+  it("matches Game List status names case-insensitively", () => {
     expect(toStatus("Want to Play")).toBe("Want to Play");
     expect(toStatus("done")).toBe("Done");
   });
@@ -102,11 +118,13 @@ describe("splitLabels", () => {
   });
 });
 
-describe("normalizePage", () => {
-  it("maps every displayed property", () => {
-    const game = normalizePage(deadCellsPage());
+describe("normalizeBrainGame", () => {
+  it("maps every displayed property from the linked Game List record", () => {
+    const game = normalizeBrainGame(deadCellsCatalog(), deadCellsGameList());
     expect(game).toMatchObject({
-      id: "0b133b50d15f413dabb76913b255bff5",
+      id: "0b133b50-d15f-413d-abb7-6913b255bff5",
+      catalogId: "707f02a4-1111-4111-8111-111111111111",
+      gameListId: "0b133b50-d15f-413d-abb7-6913b255bff5",
       name: "Dead Cells",
       platform: "PlayStation 4",
       status: "Done",
@@ -123,9 +141,9 @@ describe("normalizePage", () => {
       description: "Kill, die, learn, repeat.\n\nNo checkpoints.",
       summary: "Roguelite Metroidvania.",
       dlc: null,
-      cover: null,
+      cover: "https://images.igdb.com/igdb/image/upload/t_cover_big_2x/co1234.jpg",
       maxPlayers: 4,
-      notionUrl: "https://www.notion.so/Dead-Cells-0b133b50d15f413dabb76913b255bff5",
+      brainUrl: "https://brain.nicode.eu/r/0b133b50-d15f-413d-abb7-6913b255bff5",
     });
     expect(game.modes).toEqual({
       solo: true,
@@ -137,48 +155,64 @@ describe("normalizePage", () => {
     });
   });
 
-  it("tolerates missing and mistyped properties", () => {
-    const game = normalizePage({
-      id: "abc",
-      url: "https://notion.so/abc",
-      properties: { name: { type: "number", number: 3 }, mc_score: { type: "rich_text", rich_text: text("88") } },
+  it("builds a game from a standalone catalog item when no Game List record exists", () => {
+    const game = normalizeBrainGame(
+      deadCellsCatalog({
+        id: "11111111-2222-4333-8444-555555555555",
+        props: {
+          catalog: "games",
+          key: "hades-ii",
+          category: "PC & Xbox",
+          platform: "PC (Microsoft Windows)",
+          state: "Trying",
+          score: 94,
+          rating: 4,
+          publisher: "Supergiant Games",
+          description: "Sequel to Hades.",
+        },
+        body: "## Review\n\nAmazing combat.",
+      }),
+    );
+    expect(game).toMatchObject({
+      id: "11111111-2222-4333-8444-555555555555",
+      catalogId: "11111111-2222-4333-8444-555555555555",
+      gameListId: null,
+      platform: "PC (Microsoft Windows)",
+      status: "In progress",
+      metacritic: 94,
+      rating: 80,
+      publishers: ["Supergiant Games"],
+      description: "Sequel to Hades.",
+      notes: "Amazing combat.",
+      brainUrl: "https://brain.nicode.eu/r/11111111-2222-4333-8444-555555555555",
     });
-    expect(game.name).toBe("Untitled");
-    expect(game.metacritic).toBeNull();
-    expect(game.status).toBe("Not started");
-    expect(game.genres).toEqual([]);
+  });
+
+  it("prefers a newer catalog state change over a stale Game List status", () => {
+    const game = normalizeBrainGame(
+      deadCellsCatalog({
+        updated_at: "2026-11-11T12:00:00Z",
+        props: { catalog: "games", key: "0b133b50-d15f-413d-abb7-6913b255bff5", state: "Trying" },
+      }),
+      deadCellsGameList({
+        updated_at: "2026-11-10T12:00:00Z",
+      }),
+    );
+    expect(game.status).toBe("In progress");
   });
 
   it("drops a summary that repeats the description and a zero Metacritic score", () => {
-    const page = deadCellsPage();
-    page.properties.description_short = { type: "rich_text", rich_text: text("Same") };
-    page.properties.description = { type: "rich_text", rich_text: text("Same") };
-    page.properties.mc_score = { type: "number", number: 0 };
-    const game = normalizePage(page);
+    const gl = deadCellsGameList();
+    gl.props = { ...gl.props, description_short: "Same", description: "Same", mc_score: 0 };
+    const game = normalizeBrainGame(deadCellsCatalog(), gl);
     expect(game.summary).toBeNull();
     expect(game.metacritic).toBeNull();
-  });
-
-  it("uses an external page cover as-is", () => {
-    const game = normalizePage(deadCellsPage({ cover: { type: "external", external: { url: "https://img.test/a.jpg" } } }));
-    expect(game.cover).toBe("https://img.test/a.jpg");
-  });
-
-  it("routes expiring Notion-hosted covers through the cover API", () => {
-    const game = normalizePage(deadCellsPage({ cover: { type: "file", file: { url: "https://s3.test/signed" } } }));
-    expect(game.cover).toBe("/api/cover/0b133b50d15f413dabb76913b255bff5?notion=1");
-  });
-
-  it("prefers a `cover` URL property over the page cover", () => {
-    const page = deadCellsPage({ cover: { type: "external", external: { url: "https://img.test/page.jpg" } } });
-    page.properties.cover = { type: "url", url: "https://img.test/property.jpg" };
-    expect(normalizePage(page).cover).toBe("https://img.test/property.jpg");
   });
 });
 
 describe("assignSlugs", () => {
   const game = (id: string, name: string, platform: string | null): Game =>
-    ({ ...normalizePage(deadCellsPage()), id, name, platform }) as Game;
+    ({ ...normalizeBrainGame(deadCellsCatalog(), deadCellsGameList()), id, name, platform }) as Game;
 
   it("keeps slugs unique and stable regardless of input order", () => {
     const games = [
@@ -191,7 +225,13 @@ describe("assignSlugs", () => {
     const forward = slugs(games);
     expect(forward).toEqual(slugs([...games].reverse()));
     expect(forward).toEqual({ a1: "doom", b2: "doom-pc", c3: "doom-ps4", d4: "bowsers-fury" });
-    expect(slugs([game("a1", "Doom", "PC (Microsoft Windows)"), game("b2", "Doom", "PC (Microsoft Windows)"), game("b9", "Doom", "PC (Microsoft Windows)")])).toEqual({
+    expect(
+      slugs([
+        game("a1", "Doom", "PC (Microsoft Windows)"),
+        game("b2", "Doom", "PC (Microsoft Windows)"),
+        game("b9", "Doom", "PC (Microsoft Windows)"),
+      ]),
+    ).toEqual({
       a1: "doom",
       b2: "doom-pc",
       b9: "doom-b9",

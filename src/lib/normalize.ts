@@ -1,66 +1,69 @@
-import { GAME_STATUSES, type Game, type GameStatus, type PlayModes } from "./types";
-import { cleanText, slugify } from "./text";
+import { catalogStateToStatus, statusToCatalogState } from "./review";
 import { platformShort } from "./platforms";
+import { cleanText, slugify } from "./text";
+import { GAME_STATUSES, type Game, type GameStatus, type PlayModes } from "./types";
 
 /**
- * The subset of a Notion page object this module reads. Matches
- * `PageObjectResponse` from @notionhq/client structurally, so tests and the
- * snapshot builder can pass plain objects.
+ * A record returned by `brain-api` (after resolving select/status/multi_select
+ * option IDs to their option names).
  */
-export interface NotionPageLike {
+export interface BrainRecordLike {
   id: string;
-  url: string;
-  cover?:
-    | { type: "external"; external: { url: string } }
-    | { type: "file"; file: { url: string; expiry_time?: string } }
-    | null;
-  properties: Record<string, NotionProperty | undefined>;
+  title?: string | null;
+  props?: Record<string, unknown> | null;
+  body?: string | null;
+  updated_at?: string | null;
 }
 
-/** A Notion property value, e.g. `{ type: "number", number: 88 }`. */
-export type NotionProperty = { type: string } & Record<string, unknown>;
-
-type RichText = { plain_text: string };
-type NamedOption = { name: string } | null;
-type Props = NotionPageLike["properties"];
+type Props = Record<string, unknown>;
 
 function readText(props: Props, key: string): string | null {
-  const prop = props[key];
-  if (!prop) return null;
-  if (prop.type === "title" || prop.type === "rich_text") {
-    const parts = prop[prop.type] as RichText[] | undefined;
-    return cleanText(parts?.map((part) => part.plain_text).join(""));
-  }
-  if (prop.type === "select" || prop.type === "status") {
-    return (prop[prop.type] as NamedOption)?.name?.trim() || null;
-  }
+  const value = props[key];
+  if (typeof value === "string") return cleanText(value);
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
   return null;
 }
 
 function readNumber(props: Props, key: string): number | null {
-  const prop = props[key];
-  if (prop?.type !== "number") return null;
-  const value = prop.number;
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
+  const value = props[key];
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value.replace(",", "."));
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
 }
 
 function readOptions(props: Props, key: string): string[] {
-  const prop = props[key];
-  if (prop?.type !== "multi_select") return [];
-  const options = (prop.multi_select as { name: string }[] | undefined) ?? [];
-  return unique(options.map((option) => option.name.trim()));
+  const value = props[key];
+  if (Array.isArray(value)) {
+    return unique(value.filter((item): item is string => typeof item === "string").map((item) => item.trim()));
+  }
+  if (typeof value === "string") {
+    return unique(value.split(/[,;]/).map((item) => item.trim()));
+  }
+  return [];
 }
 
 function readDate(props: Props, key: string): string | null {
-  const prop = props[key];
-  if (prop?.type !== "date") return null;
-  const date = prop.date as { start?: string } | null;
-  return date?.start ? date.start.slice(0, 10) : null;
+  const value = props[key];
+  const raw =
+    typeof value === "string"
+      ? value
+      : value && typeof value === "object" && typeof (value as { start?: unknown }).start === "string"
+        ? (value as { start: string }).start
+        : null;
+  if (!raw || !/^\d{4}-\d{2}-\d{2}/.test(raw)) return null;
+  return raw.slice(0, 10);
 }
 
 function readCheckbox(props: Props, key: string): boolean {
-  const prop = props[key];
-  return prop?.type === "checkbox" && prop.checkbox === true;
+  return props[key] === true;
+}
+
+function readHttpUrl(props: Props, key: string): string | null {
+  const value = readText(props, key);
+  return value && /^https?:\/\//i.test(value) ? value : null;
 }
 
 function unique(values: string[]): string[] {
@@ -120,8 +123,7 @@ function readModes(props: Props): PlayModes {
     localVersus: on("local_versus") || on("local_team_versus") || on("local_alternating"),
     onlineCoop: on("online_coop_story") || on("online_coop_non_story"),
     onlineVersus: on("online_versus") || on("online_team_versus"),
-    lan:
-      on("lan_coop_story") || on("lan_coop_non_story") || on("lan_versus") || on("lan_team_versus"),
+    lan: on("lan_coop_story") || on("lan_coop_non_story") || on("lan_versus") || on("lan_team_versus"),
   };
 }
 
@@ -131,56 +133,105 @@ function readMaxPlayers(props: Props): number | null {
   return max > 1 ? max : null;
 }
 
-/** Notion-hosted files expire after an hour, so they are served through the cover route. */
-function readCover(page: NotionPageLike, id: string): string | null {
-  const prop = page.properties.cover ?? page.properties.Cover;
-  if (prop?.type === "url" && typeof prop.url === "string" && prop.url) return prop.url;
-  if (prop?.type === "files") {
-    const file = (prop.files as { type: string; external?: { url: string } }[] | undefined)?.[0];
-    if (file?.type === "external" && file.external?.url) return file.external.url;
-    if (file) return `/api/cover/${id}?notion=1`;
+function resolveStatus(catalogRecord: BrainRecordLike, gameListRecord?: BrainRecordLike): GameStatus {
+  const catProps = catalogRecord.props ?? {};
+  const catState = readText(catProps, "state");
+
+  if (!gameListRecord) {
+    return catState ? catalogStateToStatus(catState) : "Not started";
   }
-  if (page.cover?.type === "external") return page.cover.external.url;
-  if (page.cover?.type === "file") return `/api/cover/${id}?notion=1`;
-  return null;
+
+  const glProps = gameListRecord.props ?? {};
+  const rawGlStatus = readText(glProps, "status");
+  if (!rawGlStatus) {
+    return catState ? catalogStateToStatus(catState) : "Not started";
+  }
+
+  const glStatus = toStatus(rawGlStatus);
+  const catTime = catalogRecord.updated_at ? Date.parse(catalogRecord.updated_at) : NaN;
+  const glTime = gameListRecord.updated_at ? Date.parse(gameListRecord.updated_at) : NaN;
+
+  // If the catalog item state was changed more recently in Brain than the Game List row, reflect that change.
+  if (catState && Number.isFinite(catTime) && Number.isFinite(glTime) && catTime > glTime) {
+    const mappedCatState = catalogStateToStatus(catState);
+    if (statusToCatalogState(glStatus) !== statusToCatalogState(mappedCatState)) {
+      return mappedCatState;
+    }
+  }
+
+  return glStatus;
 }
 
-/** Maps one row of the "Game List" data source to a `Game` (slug assigned later). */
-export function normalizePage(page: NotionPageLike): Game {
-  const props = page.properties;
-  const id = page.id.replace(/-/g, "");
-  const name = readText(props, "name") ?? "Untitled";
-  const description = readText(props, "description");
-  const summary = readText(props, "description_short");
-  const metacritic = readNumber(props, "mc_score");
-  const playtimeMinutes = readNumber(props, "playtime_minutes");
+function extractStandaloneNotes(body: string | null | undefined): string | null {
+  if (!body) return null;
+  const trimmed = body.replace(/^#{1,4}[ \t]+Review[ \t]*(?:\r?\n|$)/i, "");
+  return cleanText(trimmed);
+}
+
+/**
+ * Combines a `cortex/catalog` item (`catalog: "games"`) and its linked
+ * `imported/game-list` record (if any) into a `Game`.
+ */
+export function normalizeBrainGame(
+  catalogRecord: BrainRecordLike,
+  gameListRecord?: BrainRecordLike,
+  brainWebUrl = "https://brain.nicode.eu",
+): Game {
+  const catProps = catalogRecord.props ?? {};
+  const glProps = gameListRecord?.props ?? {};
+  const id = gameListRecord?.id ?? catalogRecord.id;
+  const webBase = brainWebUrl.replace(/\/+$/, "");
+
+  const name =
+    cleanText(gameListRecord?.title ?? undefined) ??
+    cleanText(catalogRecord.title ?? undefined) ??
+    readText(catProps, "name") ??
+    "Untitled";
+
+  const description = readText(glProps, "description") ?? readText(catProps, "description");
+  const summary = readText(glProps, "description_short");
+  const metacritic = readNumber(glProps, "mc_score") ?? readNumber(catProps, "score");
+  const playtimeMinutes = readNumber(glProps, "playtime_minutes");
+
+  const glRating = normalizeRating(readNumber(glProps, "user_rating"));
+  const catRatingRaw = readNumber(catProps, "rating");
+  const fallbackRating =
+    !gameListRecord && catRatingRaw && catRatingRaw > 0
+      ? Math.min(100, Math.round(catRatingRaw <= 5 ? catRatingRaw * 20 : catRatingRaw))
+      : null;
+
+  const glPublishers = readOptions(glProps, "publishers");
+  const catPublisher = readText(catProps, "publisher");
+  const publishers = glPublishers.length > 0 ? glPublishers : catPublisher ? [catPublisher] : [];
 
   return {
     id,
+    catalogId: catalogRecord.id,
+    gameListId: gameListRecord?.id ?? null,
     slug: "",
     name,
-    platform: readText(props, "platforms"),
-    status: toStatus(readText(props, "status")),
+    platform: readText(glProps, "platforms") ?? readText(catProps, "platform") ?? readText(catProps, "category"),
+    status: resolveStatus(catalogRecord, gameListRecord),
     metacritic: metacritic && metacritic > 0 ? Math.round(metacritic) : null,
-    rating: normalizeRating(readNumber(props, "user_rating")),
-    genres: readOptions(props, "genres"),
-    franchises: readOptions(props, "franchises"),
-    developers: readOptions(props, "developers"),
-    publishers: readOptions(props, "publishers"),
-    labels: splitLabels(readText(props, "labels")),
-    difficulty: readText(props, "difficulty"),
-    releaseDate: readDate(props, "release_date"),
-    addedOn: readDate(props, "added_on"),
-    hltbHours: parseHours(readText(props, "hltb_main_story") ?? readNumber(props, "hltb_main_story")),
+    rating: glRating ?? fallbackRating,
+    genres: readOptions(glProps, "genres"),
+    franchises: readOptions(glProps, "franchises"),
+    developers: readOptions(glProps, "developers"),
+    publishers,
+    labels: splitLabels(readText(glProps, "labels")),
+    difficulty: readText(glProps, "difficulty"),
+    releaseDate: readDate(glProps, "release_date"),
+    addedOn: readDate(glProps, "added_on"),
+    hltbHours: parseHours(readText(glProps, "hltb_main_story") ?? readNumber(glProps, "ttb_hours")),
     playtimeHours: playtimeMinutes && playtimeMinutes > 0 ? Math.round(playtimeMinutes / 6) / 10 : null,
     summary: summary && summary !== description ? summary : null,
     description,
-    dlc: readText(props, "dlc"),
-    notes: readText(props, "notes"),
-    modes: readModes(props),
-    maxPlayers: readMaxPlayers(props),
-    cover: readCover(page, id),
-    notionUrl: page.url,
+    dlc: readText(glProps, "dlc"),
+    notes: gameListRecord ? readText(glProps, "notes") : extractStandaloneNotes(catalogRecord.body),
+    modes: readModes(glProps),
+    maxPlayers: readMaxPlayers(glProps),
+    cover: readHttpUrl(glProps, "cover_url"),
+    brainUrl: `${webBase}/r/${id}`,
   };
 }
 

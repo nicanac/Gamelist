@@ -34,7 +34,7 @@ import { useLenisRef } from "./smooth-scroll";
 
 interface GameModalProps {
   game: Game | null;
-  /** Whether status, rating and feedback can be saved back to Notion. */
+  /** Whether status, rating and feedback can be saved back to Brain. */
   editMode: EditMode;
   /** Position within the currently filtered collection, when the game is in it. */
   position: { index: number; total: number } | null;
@@ -269,12 +269,12 @@ function ModalBody({
         </div>
         <a
           data-reveal-item
-          href={game.notionUrl}
+          href={game.brainUrl}
           target="_blank"
           rel="noreferrer"
           className="mt-4 flex items-center justify-between rounded-2xl border border-line bg-black/20 px-4 py-3 text-[13px] text-ink-2 transition-colors hover:border-line-strong hover:text-ink"
         >
-          Open this page in Notion
+          Open this record in Brain
           <ArrowUpRightIcon size={16} />
         </a>
       </div>

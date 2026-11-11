@@ -28,7 +28,7 @@ export function makeGame(overrides: Partial<Game> = {}): Game {
     modes: { solo: true, localCoop: false, localVersus: false, onlineCoop: false, onlineVersus: false, lan: false },
     maxPlayers: null,
     cover: null,
-    notionUrl: "https://www.notion.so/test",
+    brainUrl: "https://brain.nicode.eu/r/test",
     ...overrides,
   };
 }

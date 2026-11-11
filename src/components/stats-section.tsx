@@ -113,7 +113,7 @@ export function StatsSection({ stats }: { stats: LibraryStats }) {
       <div className="relative mt-4 grid gap-4">
         <ChartCard
           title="Where every game stands"
-          caption="Status of each game in the Notion database."
+          caption="Status of each game in your Brain."
           table={{
             columns: [{ label: "Status" }, { label: "Games", align: "right" }, { label: "Share", align: "right" }],
             rows: segments.map((segment) => [
