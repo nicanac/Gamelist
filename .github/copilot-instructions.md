@@ -1,0 +1,1 @@
+Read and follow [AGENTS.md](../AGENTS.md) and [CLAUDE.md](../CLAUDE.md) at the root of this repository for project architecture, commands, security rules, and the mandatory GitHub Flow + Conventional Commits + SemVer/Changelog release workflow.

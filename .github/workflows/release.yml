@@ -1,0 +1,131 @@
+name: Release & Changelog
+
+on:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):') && github.actor != 'github-actions[bot]'"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump SemVer & Update CHANGELOG.md
+        id: bump
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+            const sh = (cmd) => execSync(cmd, { encoding: 'utf8' }).trim();
+
+            let lastTag = '';
+            try {
+              lastTag = sh('git describe --tags --abbrev=0 --match "v[0-9]*"');
+            } catch {}
+
+            const range = lastTag ? `${lastTag}..HEAD` : 'HEAD';
+            const raw = sh(`git log ${range} --no-merges --pretty=format:"%h%x09%s%x09%b%x1e"`);
+            const commits = raw
+              .split('\x1e')
+              .map((s) => s.trim())
+              .filter(Boolean)
+              .map((line) => {
+                const [hash, subject = '', body = ''] = line.split('\t');
+                return { hash, subject: subject.trim(), body: body.trim() };
+              })
+              .filter((c) => c.hash && !c.subject.startsWith('chore(release):'));
+
+            if (commits.length === 0) {
+              core.setOutput('released', 'false');
+              return;
+            }
+
+            let curVer = '0.1.0';
+            if (fs.existsSync('package.json')) {
+              const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+              if (pkg.version && pkg.version !== '0.0.0') curVer = pkg.version;
+            } else if (fs.existsSync('VERSION')) {
+              curVer = fs.readFileSync('VERSION', 'utf8').trim() || '0.1.0';
+            } else if (lastTag) {
+              curVer = lastTag.replace(/^v/, '');
+            }
+
+            const [maj, min, pat] = curVer.split('.').map((n) => parseInt(n, 10) || 0);
+            let bump = 'patch';
+            const groups = { Added: [], Fixed: [], Changed: [], Chores: [] };
+
+            for (const c of commits) {
+              if (/BREAKING CHANGE/i.test(c.body) || /^[a-z]+(\([^)]+\))?!:/i.test(c.subject)) {
+                bump = 'major';
+              } else if (/^(✨\s*)?(\[?feat\]?|feat)(\([^)]+\))?:/i.test(c.subject) && bump !== 'major') {
+                bump = 'minor';
+              }
+              const entry = `- ${c.subject} (\`${c.hash}\`)`;
+              if (/^(✨\s*)?(\[?feat\]?|feat|add)(\([^)]+\))?!?:/i.test(c.subject)) groups.Added.push(entry);
+              else if (/^(🐛\s*)?(\[?fix\]?|fix|bug|hotfix)(\([^)]+\))?!?:/i.test(c.subject)) groups.Fixed.push(entry);
+              else if (/^(♻️\s*)?(\[?(perf|refactor|style|ui|design)\]?|perf|refactor|style|ui|design)(\([^)]+\))?!?:/i.test(c.subject)) groups.Changed.push(entry);
+              else if (/^(🔧|🧪|📝)?\s*(\[?(chore|docs|ci|build|test)\]?|chore|docs|ci|build|test)(\([^)]+\))?!?:/i.test(c.subject)) groups.Chores.push(entry);
+              else groups.Changed.push(entry);
+            }
+
+            const nextVer =
+              bump === 'major' ? `${maj + 1}.0.0` :
+              bump === 'minor' ? `${maj}.${min + 1}.0` :
+              `${maj}.${min}.${pat + 1}`;
+
+            if (fs.existsSync('package.json')) {
+              const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+              pkg.version = nextVer;
+              fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            }
+            fs.writeFileSync('VERSION', nextVer + '\n');
+
+            const today = new Date().toISOString().slice(0, 10);
+            let section = `## [${nextVer}] - ${today}\n`;
+            for (const [heading, items] of Object.entries(groups)) {
+              if (items.length) {
+                section += `\n### ${heading}\n` + items.join('\n') + '\n';
+              }
+            }
+
+            const header = '# Changelog\n\nAll notable changes to this project are documented in this file.\n';
+            if (fs.existsSync('CHANGELOG.md')) {
+              const existing = fs.readFileSync('CHANGELOG.md', 'utf8');
+              const idx = existing.indexOf('\n## ');
+              const updated = idx !== -1
+                ? existing.slice(0, idx + 1) + '\n' + section + existing.slice(idx + 1)
+                : existing.trimEnd() + '\n\n' + section;
+              fs.writeFileSync('CHANGELOG.md', updated);
+            } else {
+              fs.writeFileSync('CHANGELOG.md', header + '\n' + section);
+            }
+
+            const targetBranch = context.ref.replace('refs/heads/', '');
+            sh('git config user.name "github-actions[bot]"');
+            sh('git config user.email "41898282+github-actions[bot]@users.noreply.github.com"');
+            sh('git add VERSION CHANGELOG.md' + (fs.existsSync('package.json') ? ' package.json' : ''));
+            sh(`git commit -m "chore(release): v${nextVer} [skip ci]"`);
+            sh(`git tag -a v${nextVer} -m "Release v${nextVer}"`);
+            sh(`git push origin HEAD:${targetBranch} --follow-tags`);
+
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `v${nextVer}`,
+              name: `v${nextVer}`,
+              body: section,
+              draft: false,
+              prerelease: false,
+            });
+
+            core.setOutput('released', 'true');
+            core.setOutput('version', nextVer);
