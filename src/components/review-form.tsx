@@ -7,6 +7,7 @@ import { parseReview, ratingOutOf20 } from "@/lib/review";
 import { STATUS_ORDER } from "@/lib/status";
 import { cleanText } from "@/lib/text";
 import type { Game, GameStatus } from "@/lib/types";
+import { SegmentedRating } from "./segmented-rating";
 
 type Message = { tone: "saved" | "error"; text: string } | null;
 
@@ -19,8 +20,7 @@ export function ReviewForm({ game, mode }: { game: Game; mode: Exclude<EditMode,
   const ids = useId();
   const savedRating = ratingOutOf20(game.rating);
   const [status, setStatus] = useState<GameStatus>(game.status);
-  // 0 on the slider means "not rated".
-  const [rating, setRating] = useState(savedRating ?? 0);
+  const [rating, setRating] = useState<number | null>(savedRating);
   const [notes, setNotes] = useState(game.notes ?? "");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<Message>(null);
@@ -28,7 +28,7 @@ export function ReviewForm({ game, mode }: { game: Game; mode: Exclude<EditMode,
 
   const changes: Record<string, unknown> = {};
   if (status !== game.status) changes.status = status;
-  if ((rating || null) !== savedRating) changes.rating = rating || null;
+  if (rating !== savedRating) changes.rating = rating;
   if ((cleanText(notes) ?? "") !== (game.notes ?? "")) changes.notes = notes;
   const dirty = Object.keys(changes).length > 0;
 
@@ -88,39 +88,7 @@ export function ReviewForm({ game, mode }: { game: Game; mode: Exclude<EditMode,
         </div>
       </fieldset>
 
-      <div className="mt-6">
-        <div className="flex items-baseline justify-between gap-3">
-          <label htmlFor={`${ids}-rating`} className="text-[13px] text-ink-2">
-            My rating
-          </label>
-          <output htmlFor={`${ids}-rating`} className="text-2xl leading-none font-semibold text-ink tabular-nums">
-            {rating ? (
-              <>
-                {rating}
-                <span className="text-sm font-normal text-muted"> / 20</span>
-              </>
-            ) : (
-              <span className="text-sm font-normal text-muted">Not rated</span>
-            )}
-          </output>
-        </div>
-        <input
-          id={`${ids}-rating`}
-          type="range"
-          min={0}
-          max={20}
-          step={0.5}
-          value={rating}
-          onChange={(event) => edit(setRating)(Number(event.target.value))}
-          aria-valuetext={rating ? `${rating} out of 20` : "Not rated"}
-          className="mt-3 w-full cursor-pointer accent-accent"
-        />
-        <div className="mt-1 flex justify-between font-mono text-[11px] text-muted" aria-hidden="true">
-          <span>Not rated</span>
-          <span>10</span>
-          <span>20</span>
-        </div>
-      </div>
+      <SegmentedRating id={`${ids}-rating`} value={rating} onChange={edit(setRating)} />
 
       <label htmlFor={`${ids}-notes`} className="mt-6 block text-[13px] text-ink-2">
         My feedback
